@@ -8,7 +8,8 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socketInstance = io(window.location.origin, {
+    const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    const socketInstance = io(socketUrl, {
       reconnectionAttempts: 5,
       timeout: 10000,
     });
