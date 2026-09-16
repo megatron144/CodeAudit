@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables & secrets
+.env
+.env.*
+*/.env
+*/.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs & caches
+dist/
+client/dist/
+build/
+.cache/
+.stitch_cache/
+stitch_extract/
+stitch-code-audit.zip
+*.zip
+
+# Operating System files
+.DS_Store
+Thumbs.db

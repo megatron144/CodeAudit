@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: codeaudit-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: codeaudit
+    volumes:
+      - mongo_data:/data/db
+  redis:
+    image: redis:7.0-alpine
+    container_name: codeaudit-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: codeaudit-api
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - MONGO_URI=mongodb://mongo:27017/codeaudit
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=codeaudit_jwt_secret_token_secure_key_123
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: codeaudit-worker
+    restart: unless-stopped
+    command: ["node", "queue/worker.js"]
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/codeaudit
+      - REDIS_URL=redis://redis:6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  mongo_data:
+  redis_data:

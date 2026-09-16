@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "command": "node",
+      "args": ["/Users/adityaraj/Code-Audit/.agents/stitch_proxy.js"]
+    }
+  }
+}
