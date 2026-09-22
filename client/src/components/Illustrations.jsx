@@ -89,9 +89,9 @@ export const FlowPipelineDiagram = () => (
         <span className="text-primary font-medium">04</span>
         <span>LLM TRIAGE</span>
       </div>
-      <div className="font-headline-sm text-sm text-on-surface font-medium">Health Score & Triage</div>
+      <div className="font-headline-sm text-sm text-on-surface font-medium">Diagnostic Triage</div>
       <div className="text-xs text-on-surface-variant font-body-sm">
-        Calculates Code Health Score with inline diagnostics and patches.
+        Evaluates deterministic invariants with inline diagnostics and patches.
       </div>
     </div>
   </div>

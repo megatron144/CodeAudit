@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Header } from '../components/Header';
-import { Sidebar } from '../components/Sidebar';
 
 export const Settings = () => {
   const [saveStatus, setSaveStatus] = useState('');
@@ -46,9 +45,8 @@ export const Settings = () => {
   return (
     <div className="min-h-screen bg-surface-container-lowest text-on-surface">
       <Header />
-      <div className="flex pt-14">
-        <Sidebar />
-        <main className="flex-1 ml-64 p-8 max-w-4xl space-y-8">
+      <div className="pt-14 w-full">
+        <main className="max-w-4xl mx-auto p-8 space-y-8">
           <div>
             <h1 className="font-headline-lg text-2xl font-bold tracking-tight text-on-surface">
               Engine Parameters

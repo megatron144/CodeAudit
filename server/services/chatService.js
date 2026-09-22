@@ -259,7 +259,7 @@ class ChatService {
     const context = await this.assembleContext({ repoId, analysisId, taggedFiles });
     const t1 = Date.now();
     const contextBuildMs = t1 - t0;
-    console.log(`[ChatService] [CONTEXT] Assembled in ${contextBuildMs}ms | Repo: "${context.repoName}" | Branch: "${context.defaultBranch}" | Files: ${context.fileTree.length} | Score: ${context.healthScore} | Diff length: ${context.activeDiff.length}`);
+    console.log(`[ChatService] [CONTEXT] Assembled in ${contextBuildMs}ms | Repo: "${context.repoName}" | Branch: "${context.defaultBranch}" | Files: ${context.fileTree.length} | Diff length: ${context.activeDiff.length}`);
 
     const history = await this.getHistory(sessionId);
     const historyText = history
@@ -281,12 +281,8 @@ class ChatService {
         ? `Provide a direct, high-density response formatted strictly in 2-3 concise bullet points with bold sub-labels (e.g. "**Primary finding:** ...", "**Resolution:** ..."). No conversational pleasantries or filler.`
         : `Structure your response with clear markdown headings and bold inline sub-labels:
 - Start with an informative bold header or topic title (e.g. "### Overview of ${context.repoName}")
-- Provide discrete, labeled sections using bold bullet points (e.g. "**Structure:** ...", "**Entry point:** ...", "**Key dependencies:** ...", "**Health & Invariants:** ...")
+- Provide discrete, labeled sections using bold bullet points (e.g. "**Structure:** ...", "**Entry point:** ...", "**Key dependencies:** ...", "**Audit Invariants:** ...")
 - Present discrete points rather than a single dense block of prose.`;
-
-      const healthStatusString = context.hasAnalysisCompleted
-        ? `${context.healthScore}/100 based on ${context.findings.length} evaluated findings`
-        : "Analysis hasn't completed for this commit yet.";
 
       const prompt = `You are CodeAudit's repo-aware precision AI assistant.
 Your goal is to answer the user's specific question conversationally, clearly, and technically.
@@ -305,7 +301,6 @@ ${modeInstruction}
 REPOSITORY CONTEXT:
 - Repository: ${context.repoName} (Branch: ${context.defaultBranch})
 - Description: ${context.description}
-- Code Health Status: ${healthStatusString}
 ${context.activeDiff ? `- Evaluated Diff:\n${context.activeDiff.substring(0, 4000)}` : '- Evaluated Diff: None loaded for this query.'}
 ${context.findings.length > 0 ? `- Findings:\n${JSON.stringify(context.findings.slice(0, 5), null, 2)}` : (context.hasAnalysisCompleted ? '- Findings: No active findings detected.' : '- Findings: Analysis has not completed yet.')}
 ${context.sandboxOutput ? `- Sandbox Execution Output:\n${context.sandboxOutput.substring(0, 1500)}` : ''}
@@ -361,11 +356,11 @@ Respond conversationally to the user's question:`;
       // Deterministic conversational fallback answering the question naturally without dumping raw metadata
       const lowerQuery = (query || '').toLowerCase();
       
-      if (lowerQuery.includes('health') || lowerQuery.includes('score') || lowerQuery.includes('audit')) {
+      if (lowerQuery.includes('audit') || lowerQuery.includes('finding') || lowerQuery.includes('vulnerability') || lowerQuery.includes('issue')) {
         if (context.hasAnalysisCompleted) {
-          fullReply = `The code health score for **${context.repoName}** is **${context.healthScore}/100** based on ${context.findings.length} evaluated findings.${context.findings.length > 0 ? ` Key findings include ${context.findings.map(f => f.title || f.rule).slice(0, 2).join(' and ')}.` : ' No vulnerabilities or blocking issues were identified in this run.'}`;
+          fullReply = `The audit evaluation for **${context.repoName}** identified ${context.findings.length} findings.${context.findings.length > 0 ? ` Key findings include ${context.findings.map(f => f.title || f.rule).slice(0, 2).join(' and ')}.` : ' No vulnerabilities or blocking issues were identified in this run.'}`;
         } else {
-          fullReply = `Analysis hasn't completed for this commit yet. Once an audit is triggered and completes, verified code health metrics and findings will be available.`;
+          fullReply = `Analysis hasn't completed for this commit yet. Once an audit is triggered and completes, verified diagnostic findings will be available.`;
         }
       } else if (lowerQuery.includes('what') || lowerQuery.includes('overview') || lowerQuery.includes('do') || lowerQuery.includes('about')) {
         fullReply = `**${context.repoName}** is ${context.description || 'a project registered in CodeAudit'}.${context.fileTree.length > 0 ? ` Key files and modules include \`${context.fileTree.slice(0, 4).join('`, `')}\`.` : ''}`;
@@ -373,7 +368,7 @@ Respond conversationally to the user's question:`;
         fullReply = `Here is the high-level module layout for **${context.repoName}** across the ${context.defaultBranch} branch:\n\n` +
           (context.fileTree.length > 0 ? context.fileTree.slice(0, 6).map(f => `• \`${f}\``).join('\n') : 'No file paths currently indexed.');
       } else {
-        fullReply = `I don't have enough information to answer that yet. Please try asking about the repository structure, code health, or specific files.`;
+        fullReply = `I don't have enough information to answer that yet. Please try asking about the repository structure or specific files.`;
       }
       
       promptTokens = Math.ceil(query.length / 4) + 60;

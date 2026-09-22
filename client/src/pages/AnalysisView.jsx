@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Header } from '../components/Header';
-import { Sidebar } from '../components/Sidebar';
 import { StatusStepper } from '../components/StatusStepper';
 import { FindingsSummary } from '../components/FindingsSummary';
 import { SandboxTerminal } from '../components/SandboxTerminal';
@@ -105,8 +104,7 @@ export const AnalysisView = () => {
     return (
       <div className="min-h-screen bg-surface-container-lowest text-on-surface">
         <Header />
-        <Sidebar />
-        <div className="pl-60 pt-24 text-center text-outline font-body-sm text-xs">
+        <div className="pt-24 text-center text-outline font-body-sm text-xs">
           Loading audit workbench...
         </div>
       </div>
@@ -118,8 +116,7 @@ export const AnalysisView = () => {
     return (
       <div className="min-h-screen bg-surface-container-lowest text-on-surface font-body-md antialiased">
         <Header />
-        <Sidebar />
-        <div className="pl-60 pt-24 flex flex-col items-center justify-center p-6 text-center">
+        <div className="pt-24 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-14 h-14 rounded bg-surface-container flex items-center justify-center border border-outline-variant/30 mb-4 text-outline">
             <span className="material-symbols-outlined text-[28px]">analytics</span>
           </div>
@@ -127,14 +124,14 @@ export const AnalysisView = () => {
             No analysis performed yet
           </h2>
           <p className="font-body-sm text-sm text-on-surface-variant max-w-md mb-6">
-            Link a public repository and trigger an audit on a commit or pull request to inspect unified diffs, AST evaluation, and code health scores.
+            Link a public repository and trigger an audit on a commit or pull request to inspect unified diffs, AST evaluation, and security findings.
           </p>
           <Link
-            to="/repos"
+            to="/"
             className="px-4 py-2 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-body-sm text-sm font-medium transition-none flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[16px]">folder_open</span>
-            <span>Go to repositories</span>
+            <span className="material-symbols-outlined text-[16px]">home</span>
+            <span>Return to home</span>
           </Link>
         </div>
       </div>
@@ -148,20 +145,14 @@ export const AnalysisView = () => {
   return (
     <div className="min-h-screen bg-surface-container-lowest text-on-surface font-body-md antialiased">
       <Header />
-      <Sidebar />
 
-      <div className="pl-60">
-        <main className="w-full min-h-screen pt-14 bg-surface-container-lowest flex flex-col">
+      <main className="w-full min-h-screen pt-14 bg-surface-container-lowest flex flex-col">
           {/* Top Workspace Context Header */}
           <div className="w-full bg-surface border-b border-outline-variant/30 px-6 py-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex flex-col gap-1 min-w-0">
                 {/* Breadcrumb */}
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 font-body-sm text-body-sm text-outline">
-                  <Link to="/repos" className="hover:text-on-surface transition-colors">
-                    Repositories
-                  </Link>
-                  <span className="text-outline-variant select-none">›</span>
                   {analysis.repoName && (
                     <>
                       <Link to={`/repos/${analysis.repoId}`} className="hover:text-on-surface text-on-surface-variant transition-colors">
@@ -197,20 +188,8 @@ export const AnalysisView = () => {
                 </div>
               </div>
 
-              {/* Single Clean Score & Action */}
+              {/* Action Button */}
               <div className="flex items-center gap-3 shrink-0">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low border border-outline-variant/40 rounded">
-                  <span className="font-body-sm text-xs text-outline">Score</span>
-                  <span className="font-code-lg text-sm font-semibold text-on-surface">
-                    {analysis.score !== null && analysis.score !== undefined ? analysis.score : 100}/100
-                  </span>
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      (analysis.score ?? 100) >= 80 ? 'bg-primary' : 'bg-tertiary'
-                    }`}
-                  ></span>
-                </div>
-
                 <button
                   onClick={handleRerun}
                   disabled={rerunning}
@@ -275,7 +254,6 @@ export const AnalysisView = () => {
             </div>
           </div>
         </main>
-      </div>
 
       {/* Docked Repo Assistant Chatbot */}
       <RepoChatbot

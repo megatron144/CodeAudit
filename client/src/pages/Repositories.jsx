@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Header } from '../components/Header';
-import { Sidebar } from '../components/Sidebar';
 
 export const Repositories = () => {
   const [repos, setRepos] = useState([]);
@@ -56,7 +55,7 @@ export const Repositories = () => {
       setShowAddModal(false);
       const linkedRepo = res.data;
       setNewRepoUrl('');
-      // Trigger initial background analysis so AST & health score are available to the chat
+      // Trigger initial background analysis so AST is available to the chat
       if (linkedRepo?._id) {
         axios.post('/api/analysis/trigger', {
           repoId: linkedRepo._id,
@@ -95,10 +94,8 @@ export const Repositories = () => {
   return (
     <div className="bg-surface-container-lowest font-body-md text-on-surface antialiased min-h-screen">
       <Header />
-      <Sidebar />
 
-      <div className="pl-60">
-        <main className="w-full min-h-screen pt-14 bg-surface-container-lowest">
+      <main className="w-full min-h-screen pt-14 bg-surface-container-lowest">
           <div className="flex flex-col w-full">
             {/* Header Bar */}
             <section className="w-full bg-surface-container-lowest border-b border-outline-variant/30 px-6 py-5">
@@ -169,7 +166,7 @@ export const Repositories = () => {
                     No repositories added yet.
                   </h2>
                   <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mb-5">
-                    Add a public GitHub repository to start evaluating pull requests, commit diffs, and code health scores.
+                    Add a public GitHub repository to start evaluating pull requests, commit diffs, and code findings.
                   </p>
                   <button
                     onClick={() => setShowAddModal(true)}
@@ -193,9 +190,6 @@ export const Repositories = () => {
                           </th>
                           <th className="px-4 font-body-sm text-xs text-outline font-medium">
                             Commits audited
-                          </th>
-                          <th className="px-4 font-body-sm text-xs text-outline font-medium">
-                            Code health score
                           </th>
                           <th className="px-4 font-body-sm text-xs text-outline font-medium">
                             Status
@@ -234,16 +228,6 @@ export const Repositories = () => {
                             </td>
                             <td className="px-4 py-2 text-on-surface font-body-sm text-xs">
                               {r.commitsAudited}
-                            </td>
-                            <td className="px-4 py-2">
-                              {r.score !== null ? (
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high border border-primary-container text-primary font-code-sm text-xs">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
-                                  <span>{r.score}/100</span>
-                                </div>
-                              ) : (
-                                <span className="text-outline font-body-sm text-xs">—</span>
-                              )}
                             </td>
                             <td className="px-4 py-2">
                               {r.isPassing !== null ? (
@@ -290,7 +274,6 @@ export const Repositories = () => {
             </div>
           </div>
         </main>
-      </div>
 
       {/* Add Repository Modal */}
       {showAddModal && (

@@ -14,14 +14,14 @@ export const FindingsSummary = ({
         <span className="font-body-sm text-xs text-outline font-medium">
           Findings summary
         </span>
-        <span className="font-code-sm text-xs text-outline">{totalCount} {totalCount === 1 ? 'item' : 'items'}</span>
+        <span className="font-body-sm text-xs text-outline">{totalCount} {totalCount === 1 ? 'item' : 'items'}</span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 font-body-sm text-xs">
         {/* Critical */}
         <div className="p-2.5 bg-surface-container-low border border-outline-variant/30 rounded flex flex-col">
           <span className="font-body-sm text-xs text-outline font-normal">Critical</span>
-          <span className="font-code-lg text-lg text-on-surface mt-1 font-semibold">
+          <span className="font-headline-lg text-lg text-on-surface mt-1 font-semibold">
             {criticalCount}
           </span>
           <span className="font-body-xs text-[10px] text-outline">blocking</span>
@@ -32,7 +32,7 @@ export const FindingsSummary = ({
           <span className="font-body-sm text-xs text-tertiary-fixed-dim font-normal">
             Warning
           </span>
-          <span className="font-code-lg text-lg text-tertiary mt-1 font-semibold">
+          <span className="font-headline-lg text-lg text-tertiary mt-1 font-semibold">
             {warningCount}
           </span>
           <span className="font-body-xs text-[10px] text-outline">review required</span>
@@ -41,7 +41,7 @@ export const FindingsSummary = ({
         {/* Informational / Notices */}
         <div className="p-2.5 bg-surface-container-low border border-outline-variant/30 rounded flex flex-col">
           <span className="font-body-sm text-xs text-outline font-normal">Notices</span>
-          <span className="font-code-lg text-lg text-on-surface mt-1 font-semibold">
+          <span className="font-headline-lg text-lg text-on-surface mt-1 font-semibold">
             {noticeCount}
           </span>
           <span className="font-body-xs text-[10px] text-outline">informational</span>

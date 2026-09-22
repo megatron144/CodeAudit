@@ -68,6 +68,32 @@ router.post('/resolve', async (req, res) => {
   }
 });
 
+// Search GitHub users with backend Redis caching
+router.get('/search-users', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return res.json([]);
+    }
+    const users = await githubService.searchUsers(q);
+    return res.json(users);
+  } catch (err) {
+    return res.json([]);
+  }
+});
+
+// Fetch user profile with backend Redis caching
+router.get('/user-profile/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await githubService.getUserProfile(username);
+    return res.json(user);
+  } catch (err) {
+    const status = err.message?.includes('not found') ? 404 : (err.message?.includes('rate limit') ? 429 : 500);
+    return res.status(status).json({ message: err.message });
+  }
+});
+
 // Link a Public Repository by URL
 router.post('/link', async (req, res) => {
   try {

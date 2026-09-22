@@ -208,15 +208,7 @@ export const RepoChatbot = ({
   const [copiedId, setCopiedId] = useState(null);
   const [streaming, setStreaming] = useState(false);
 
-  const [messages, setMessages] = useState([
-    {
-      id: 'init-msg',
-      role: 'assistant',
-      content: `### Welcome to ${repoName}\n\n• **Conversational workspace:** Ask any question about this repository's code, structure, or code health score.\n• **Natural language health check:** Ask *"How healthy is this repo?"* to review real static findings and sandbox results.\n• **Explore architecture:** Click the tree icon or ask *"Show repository structure"* to inspect file hierarchies.\n• **File scoping:** Type \`@\` to scope questions to specific modules.`,
-      telemetry: null,
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const threadRef = useRef(null);
   const resizeRef = useRef({ isResizing: false, startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
@@ -573,7 +565,6 @@ export const RepoChatbot = ({
   }
 
   const quickPrompts = [
-    'How healthy is this repo?',
     'Show repository structure',
     'What does this project do?',
     'Explain main entrypoint',
@@ -582,25 +573,11 @@ export const RepoChatbot = ({
   // Full-page view layout
   if (isFullPage) {
     return (
-      <div className="w-full h-full flex flex-col bg-surface-container-lowest font-body-md text-on-surface select-text overflow-hidden">
-        {/* Quick Suggestion Chips */}
-        <div className="px-6 py-2 bg-surface border-b border-outline-variant/30 flex items-center gap-2 overflow-x-auto select-none shrink-0">
-          <span className="text-[11px] text-outline font-body-sm shrink-0">Suggested:</span>
-          {quickPrompts.map((promptText) => (
-            <button
-              key={promptText}
-              onClick={() => handleSend(null, promptText.includes('structure'), promptText)}
-              className="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface hover:text-primary text-xs font-body-sm transition-colors whitespace-nowrap shrink-0"
-            >
-              {promptText}
-            </button>
-          ))}
-        </div>
-
+      <div className="w-full flex-1 flex flex-col min-h-0 bg-surface-container-lowest font-body-md text-on-surface select-text overflow-hidden justify-between">
         {/* Message Thread */}
         <div
           ref={threadRef}
-          className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 select-text bg-surface-container-lowest"
+          className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 select-text bg-surface-container-lowest min-h-0"
         >
           {messages.map((msg) => (
             <div key={msg.id || msg.timestamp} className="flex flex-col gap-1.5 max-w-4xl w-full mx-auto">
@@ -732,57 +709,73 @@ export const RepoChatbot = ({
         )}
 
         {/* Input Bar */}
-        <div className="p-4 bg-surface border-t border-outline-variant/30 shrink-0 select-none">
-          <form
-            onSubmit={(e) => handleSend(e, false)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const droppedText = e.dataTransfer.getData('text/plain');
-              if (droppedText) {
-                setInput((prev) => `${prev} @${droppedText} `);
-              }
-            }}
-            className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 rounded px-3 py-2 focus-within:border-primary transition-colors max-w-4xl mx-auto w-full"
-          >
-            {/* Tree Trigger */}
-            <button
-              type="button"
-              onClick={() => {
-                if (treeData.length === 0 && socket) {
-                  socket.emit('chat:get_tree', { repoId, analysisId });
+        <div className="p-4 bg-surface border-t border-outline-variant/30 shrink-0 select-none mt-auto">
+          <div className="max-w-4xl mx-auto w-full flex flex-col gap-2.5">
+            {/* Suggested Question Chips positioned directly above input */}
+            <div className="flex items-center gap-2 overflow-x-auto select-none pb-0.5">
+              {quickPrompts.map((promptText) => (
+                <button
+                  key={promptText}
+                  type="button"
+                  onClick={() => handleSend(null, promptText.includes('structure'), promptText)}
+                  className="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface hover:text-primary text-xs font-body-sm transition-colors whitespace-nowrap shrink-0"
+                >
+                  {promptText}
+                </button>
+              ))}
+            </div>
+
+            <form
+              onSubmit={(e) => handleSend(e, false)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const droppedText = e.dataTransfer.getData('text/plain');
+                if (droppedText) {
+                  setInput((prev) => `${prev} @${droppedText} `);
                 }
-                setShowTreeModal(!showTreeModal);
               }}
-              className={`w-7 h-7 rounded flex items-center justify-center transition-colors shrink-0 ${
-                showTreeModal ? 'text-primary bg-surface-container' : 'text-outline hover:text-on-surface'
-              }`}
-              title="Toggle file hierarchy"
-              aria-label="Toggle file hierarchy"
+              className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 rounded px-3 py-2 focus-within:border-primary transition-colors w-full"
             >
-              <span className="material-symbols-outlined text-[17px]">account_tree</span>
-            </button>
+              {/* Tree Trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (treeData.length === 0 && socket) {
+                    socket.emit('chat:get_tree', { repoId, analysisId });
+                  }
+                  setShowTreeModal(!showTreeModal);
+                }}
+                className={`w-7 h-7 rounded flex items-center justify-center transition-colors shrink-0 ${
+                  showTreeModal ? 'text-primary bg-surface-container' : 'text-outline hover:text-on-surface'
+                }`}
+                title="Toggle file hierarchy"
+                aria-label="Toggle file hierarchy"
+              >
+                <span className="material-symbols-outlined text-[17px]">account_tree</span>
+              </button>
 
-            {/* Main Input Field */}
-            <input
-              type="text"
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Ask anything about this repo's code, structure, or health (use @ to tag a file)..."
-              className="flex-1 min-w-0 bg-transparent text-sm text-on-surface placeholder:text-outline font-body-sm focus:outline-none"
-            />
+              {/* Main Input Field */}
+              <input
+                type="text"
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask anything about this repo's code or structure (use @ to tag a file)..."
+                className="flex-1 min-w-0 bg-transparent text-sm text-on-surface placeholder:text-outline font-body-sm focus:outline-none"
+              />
 
-            {/* Primary Send Action */}
-            <button
-              type="submit"
-              disabled={!input.trim() || streaming}
-              className="w-7 h-7 rounded bg-primary hover:bg-primary/90 disabled:opacity-30 text-on-primary flex items-center justify-center transition-colors shrink-0"
-              title="Send query"
-              aria-label="Send query"
-            >
-              <span className="material-symbols-outlined text-[15px]">arrow_upward</span>
-            </button>
-          </form>
+              {/* Primary Send Action */}
+              <button
+                type="submit"
+                disabled={!input.trim() || streaming}
+                className="w-7 h-7 rounded bg-primary hover:bg-primary/90 disabled:opacity-30 text-on-primary flex items-center justify-center transition-colors shrink-0"
+                title="Send query"
+                aria-label="Send query"
+              >
+                <span className="material-symbols-outlined text-[15px]">arrow_upward</span>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
@@ -984,6 +977,20 @@ export const RepoChatbot = ({
 
           {/* Input Bar: Clean, focused, consistent spacing */}
           <div className="p-3 bg-surface-container-high border-t border-outline-variant/30 shrink-0 select-none">
+            {/* Suggested Question Chips positioned directly above input */}
+            <div className="flex items-center gap-1.5 overflow-x-auto select-none pb-2 scrollbar-none">
+              {quickPrompts.map((promptText) => (
+                <button
+                  key={promptText}
+                  type="button"
+                  onClick={() => handleSend(null, promptText.includes('structure'), promptText)}
+                  className="px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface hover:text-primary text-[11px] font-body-sm transition-colors whitespace-nowrap shrink-0"
+                >
+                  {promptText}
+                </button>
+              ))}
+            </div>
+
             <form
               onSubmit={(e) => handleSend(e, false)}
               onDragOver={(e) => e.preventDefault()}
@@ -1019,7 +1026,7 @@ export const RepoChatbot = ({
                 type="text"
                 value={input}
                 onChange={handleInputChange}
-                placeholder="Ask about this repo's structure, code, or history..."
+                placeholder="Ask about this repo's structure, code, or entrypoint..."
                 className="flex-1 min-w-0 bg-transparent text-xs text-on-surface placeholder:text-outline font-body-sm focus:outline-none"
               />
 

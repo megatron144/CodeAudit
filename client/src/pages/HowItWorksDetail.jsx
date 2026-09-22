@@ -102,17 +102,17 @@ const PIPELINE_STEPS = [
         ]
       },
       {
-        heading: 'Timeout guardrails and health scoring',
+        heading: 'Timeout guardrails and resilience',
         paragraphs: [
           'Every model call is protected by a 35-second hard timeout. If an API call fails or stalls, the backend catches the error cleanly and presents an inline retry state instead of hanging the interface.',
-          'A normalized 0–100 code health score is calculated by combining detected flaws, cyclomatic complexity changes, and sandbox exit codes.'
+          'Detected flaws, cyclomatic complexity changes, and sandbox exit codes are synthesized into deterministic diagnostic findings.'
         ]
       }
     ],
     detailsList: [
       { label: 'Evaluation model', value: 'Gemini 3.6 Flash (temperature 0.1)' },
       { label: 'Execution timeout', value: '35 seconds hard timeout guard' },
-      { label: 'Output structure', value: 'Summary, categorized findings, and health score (0–100)' },
+      { label: 'Output structure', value: 'Summary, categorized findings, and actionable patches' },
       { label: 'Failure recovery', value: 'Inline error notification with instant retry option' }
     ]
   },
@@ -120,7 +120,7 @@ const PIPELINE_STEPS = [
     slug: 'conversational-review',
     number: '05',
     title: 'You can ask questions about the repo through chat',
-    lead: 'A chat interface lets you ask questions about the codebase, explore file relationships, and check health findings.',
+    lead: 'A chat interface lets you ask questions about the codebase, explore file relationships, and check audit findings.',
     sections: [
       {
         heading: 'Grounded repository context',
@@ -174,12 +174,6 @@ export const HowItWorksDetail = () => {
             <Link to="/" className="hover:text-[#EDEDF0] transition-colors">
               ← Back to home
             </Link>
-            <Link
-              to="/repos"
-              className="px-2.5 py-1 rounded bg-[#111118] border border-[#1E1E2A] text-[#EDEDF0] hover:border-[#2563eb]/40 transition-colors"
-            >
-              Repositories
-            </Link>
           </div>
         </div>
       </nav>
@@ -209,7 +203,7 @@ export const HowItWorksDetail = () => {
 
         {/* Step Header */}
         <div className="mb-10">
-          <div className="text-base sm:text-lg font-semibold text-[#2563eb] mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B1220] border border-[#2563eb]/50 shadow-[0_0_12px_rgba(37,99,235,0.15)] text-xs font-semibold text-blue-400 tracking-wider mb-3">
             Step {currentStep.number}
           </div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#EDEDF0]">
@@ -247,7 +241,7 @@ export const HowItWorksDetail = () => {
             {currentStep.detailsList.map((item, idx) => (
               <div key={idx} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs sm:text-sm">
                 <span className="text-[#888896]">{item.label}</span>
-                <span className="font-mono text-xs text-[#EDEDF0]">{item.value}</span>
+                <span className="font-medium text-xs text-[#EDEDF0]">{item.value}</span>
               </div>
             ))}
           </div>

@@ -47,8 +47,8 @@ export const StatusStepper = ({ status = 'completed', stageDurations = {} }) => 
     },
     {
       id: 5,
-      label: 'Score generation',
-      meta: status === 'completed' ? 'calculated' : 'pending',
+      label: 'Report generation',
+      meta: status === 'completed' ? 'complete' : 'pending',
     },
   ];
 

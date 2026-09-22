@@ -7,17 +7,82 @@ class GitHubService {
   }
 
   getHeaders(userToken = null, etag = null) {
+    const token = userToken || process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || null;
     const headers = {
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'CodeAudit-System/2.4'
     };
-    if (userToken) {
-      headers.Authorization = `Bearer ${userToken}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
     if (etag) {
       headers['If-None-Match'] = etag;
     }
     return headers;
+  }
+
+  async searchUsers(query) {
+    if (!query || query.trim().length < 2) return [];
+    const clean = query.trim().replace(/^@/, '').toLowerCase();
+    const cacheKey = `gh:user_search:${clean}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+
+    try {
+      const url = `${this.apiBase}/search/users?q=${encodeURIComponent(clean)}&per_page=6`;
+      const response = await axios.get(url, {
+        headers: this.getHeaders(),
+        timeout: 5000,
+      });
+      const items = response.data?.items || [];
+      const users = items.map((u) => ({
+        login: u.login,
+        avatar_url: u.avatar_url,
+        type: u.type,
+      }));
+
+      try {
+        await redis.set(cacheKey, JSON.stringify(users), 'EX', 1800); // 30 min cache
+      } catch (e) {}
+
+      return users;
+    } catch (err) {
+      console.warn(`[GitHubService] searchUsers notice: ${err.message}`);
+      return [];
+    }
+  }
+
+  async getUserProfile(username) {
+    if (!username) throw new Error('Username is required');
+    const clean = username.trim().replace(/^@/, '');
+    const cacheKey = `gh:user_profile:${clean.toLowerCase()}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+
+    try {
+      const url = `${this.apiBase}/users/${encodeURIComponent(clean)}`;
+      const response = await axios.get(url, {
+        headers: this.getHeaders(),
+        timeout: 8000,
+      });
+      const user = response.data;
+      try {
+        await redis.set(cacheKey, JSON.stringify(user), 'EX', 3600); // 1 hr cache
+      } catch (e) {}
+      return user;
+    } catch (err) {
+      if (err.response?.status === 404) {
+        throw new Error(`GitHub user "${username}" not found.`);
+      }
+      if (err.response?.status === 403) {
+        throw new Error('GitHub API rate limit exceeded. Add a GITHUB_TOKEN to your .env file for 5,000 requests/hour.');
+      }
+      throw err;
+    }
   }
 
   async cachedRequest(url, userToken = null, ttl = 300) {
