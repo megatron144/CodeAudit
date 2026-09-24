@@ -328,9 +328,44 @@ class GitHubService {
     try {
       const data = await this.cachedRequest(url, userToken, 600);
       if (!data || !Array.isArray(data.tree)) return [];
-      return data.tree
+      
+      const isNoise = (p) => {
+        const lower = p.toLowerCase();
+        return (
+          lower === '.ds_store' ||
+          lower.endsWith('/.ds_store') ||
+          lower.startsWith('.vscode/') ||
+          lower.startsWith('.idea/') ||
+          lower.startsWith('.git') ||
+          lower.includes('/.vscode/') ||
+          lower.includes('/.idea/') ||
+          lower.includes('.mvn/wrapper/') ||
+          lower === 'package-lock.json' ||
+          lower === 'yarn.lock' ||
+          lower === 'pnpm-lock.yaml'
+        );
+      };
+
+      const allBlobs = data.tree
         .filter(item => item.type === 'blob')
-        .map(item => item.path);
+        .map(item => item.path)
+        .filter(p => !isNoise(p));
+
+      // Prioritize primary architecture and code files over root boilerplate
+      allBlobs.sort((a, b) => {
+        const score = (p) => {
+          const l = p.toLowerCase();
+          if (l.includes('/controller/') || l.includes('/routes/') || l.includes('/service/') || l.includes('/api/')) return 10;
+          if (l.includes('src/') || l.includes('main/')) return 8;
+          if (l.endsWith('.java') || l.endsWith('.go') || l.endsWith('.py') || l.endsWith('.rs') || l.endsWith('.ts') || l.endsWith('.js')) return 6;
+          if (l.endsWith('readme.md') || l.includes('dockerfile')) return 4;
+          if (l.endsWith('pom.xml') || l.endsWith('package.json')) return 3;
+          return 1;
+        };
+        return score(b) - score(a);
+      });
+
+      return allBlobs;
     } catch (err) {
       console.warn(`[GitHubService] getFileTree failed for ${owner}/${repo}: ${err.message}`);
       return [];

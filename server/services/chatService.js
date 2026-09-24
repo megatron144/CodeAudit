@@ -11,7 +11,7 @@ class ChatService {
     this.apiKey = process.env.GEMINI_API_KEY || '';
     this.SESSION_TTL = 86400; // 24 hours
     // Supported production Gemini models with auto-fallback
-    this.models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    this.models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   }
 
   getSessionKey(sessionId) {
