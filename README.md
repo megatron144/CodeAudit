@@ -91,6 +91,7 @@ REDIS_PORT=6379
 RUN_WORKER_IN_PROCESS=true
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=your_jwt_secret_key
+GITHUB_TOKEN=your_github_personal_access_token # Increases API rate limit to 5000/hr
 ```
 
 ### 3. Start Redis
