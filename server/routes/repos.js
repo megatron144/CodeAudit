@@ -5,6 +5,7 @@ const Analysis = require('../models/Analysis');
 const ReviewHistory = require('../models/ReviewHistory');
 const githubService = require('../services/githubService');
 const { checkRepoSizeCap } = require('../middleware/rateLimiter');
+const { requireAdmin } = require('../middleware/auth');
 
 // Resolve a GitHub repository URL or username
 router.post('/resolve', async (req, res) => {
@@ -246,7 +247,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Delete / Unlink
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     await Repository.findByIdAndDelete(req.params.id);
     await Analysis.deleteMany({ repoId: req.params.id });

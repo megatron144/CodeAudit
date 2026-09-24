@@ -8,6 +8,7 @@ import { RepoDetail } from './pages/RepoDetail';
 import { AnalysisView } from './pages/AnalysisView';
 import { Settings } from './pages/Settings';
 import { HowItWorksDetail } from './pages/HowItWorksDetail';
+import { HistoryTrends } from './pages/HistoryTrends';
 
 export function App() {
   return (
@@ -19,6 +20,8 @@ export function App() {
           <Route path="/repos" element={<Repositories />} />
           <Route path="/repos/:id" element={<RepoDetail />} />
           <Route path="/analysis/:id" element={<AnalysisView />} />
+          <Route path="/trends" element={<HistoryTrends />} />
+          <Route path="/repos/:repoId/trends" element={<HistoryTrends />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

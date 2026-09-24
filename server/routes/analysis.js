@@ -189,21 +189,70 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Apply Suggested Patch
+// Apply Suggested Patch and generate unified git patch
 router.post('/:id/apply-patch', async (req, res) => {
   try {
     const { findingId } = req.body;
     const analysis = await Analysis.findById(req.params.id);
     if (!analysis) return res.status(404).json({ message: 'Analysis not found' });
 
-    const finding = analysis.findings.id(findingId) || analysis.findings[0];
+    const finding = analysis.findings.id(findingId) || analysis.findings.find(f => f.id === findingId) || analysis.findings[0];
     if (finding) {
       finding.status = 'applied';
-      analysis.score = Math.min(100, Math.round((analysis.score + 1.2) * 10) / 10);
+      analysis.score = Math.min(100, Math.round((analysis.score + 2.5) * 10) / 10);
+
+      // Generate standard unified git diff patch
+      const filename = finding.file || 'source.js';
+      const patchLine = finding.line || 1;
+      const patchHunk = `diff --git a/${filename} b/${filename}
+--- a/${filename}
++++ b/${filename}
+@@ -${patchLine},1 +${patchLine},1 @@
+- // Vulnerable or unmitigated code at line ${patchLine}
++ ${finding.suggestedPatch || '// Remediation applied for ' + finding.rule}`;
+
+      finding.suggestedPatch = finding.suggestedPatch || patchHunk;
       await analysis.save();
+
+      return res.json({
+        message: 'Suggested patch applied to analysis record',
+        patch: patchHunk,
+        analysis
+      });
     }
 
-    res.json({ message: 'Suggested patch applied', analysis });
+    res.status(404).json({ message: 'Finding not found' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Download Unified Git Patch for Analysis Remediation
+router.get('/:id/patch', async (req, res) => {
+  try {
+    const analysis = await Analysis.findById(req.params.id);
+    if (!analysis) return res.status(404).json({ message: 'Analysis not found' });
+
+    const appliedFindings = (analysis.findings || []).filter(f => f.status === 'applied' || f.suggestedPatch);
+    const patchHeader = `# CodeAudit Patch Remediation
+# Target: ${analysis.repoName} @ ${analysis.commitHash}
+# Generated on: ${new Date().toISOString()}
+`;
+    const patches = appliedFindings.map(f => {
+      const fn = f.file || 'source';
+      const ln = f.line || 1;
+      return `diff --git a/${fn} b/${fn}
+--- a/${fn}
++++ b/${fn}
+@@ -${ln},1 +${ln},1 @@
+- // Line ${ln}: ${f.title} (${f.rule})
++ ${f.suggestedPatch || '// Remediation applied'}`;
+    }).join('\n\n');
+
+    const output = `${patchHeader}\n${patches || '# No active patches to export'}\n`;
+    res.setHeader('Content-Type', 'text/x-diff');
+    res.setHeader('Content-Disposition', `attachment; filename="codeaudit-patch-${analysis.commitHash}.patch"`);
+    res.send(output);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -216,7 +265,7 @@ router.post('/:id/dismiss', async (req, res) => {
     const analysis = await Analysis.findById(req.params.id);
     if (!analysis) return res.status(404).json({ message: 'Analysis not found' });
 
-    const finding = analysis.findings.id(findingId) || analysis.findings[0];
+    const finding = analysis.findings.id(findingId) || analysis.findings.find(f => f.id === findingId) || analysis.findings[0];
     if (finding) {
       finding.status = 'dismissed';
       await analysis.save();
