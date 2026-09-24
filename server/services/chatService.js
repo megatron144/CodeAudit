@@ -11,7 +11,11 @@ class ChatService {
     this.apiKey = process.env.GEMINI_API_KEY || '';
     this.SESSION_TTL = 86400; // 24 hours
     // Supported production Gemini models with auto-fallback
-    this.models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    this.models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
+  }
+
+  getApiKey() {
+    return process.env.GEMINI_API_KEY || this.apiKey || '';
   }
 
   getSessionKey(sessionId) {
@@ -155,7 +159,7 @@ class ChatService {
     return root;
   }
 
-  async assembleContext({ repoId, analysisId, taggedFiles = [] }) {
+  async assembleContext({ repoId, analysisId, taggedFiles = [], query = '' }) {
     let repo = null;
     let analysis = null;
     let fileTree = [];
@@ -183,11 +187,25 @@ class ChatService {
       }
     }
 
-    if (repo) {
-      try {
-        fileTree = await githubService.getFileTree(repo.owner, repo.name, repo.defaultBranch);
-      } catch (e) {}
+    let owner = repo?.owner || '';
+    let repoShortName = repo?.name || '';
+    if ((!owner || !repoShortName) && analysis?.repoName) {
+      const parts = analysis.repoName.split('/');
+      if (parts.length === 2) {
+        owner = parts[0];
+        repoShortName = parts[1];
+      }
+    }
 
+    const defaultBranch = repo?.defaultBranch || 'main';
+
+    if (owner && repoShortName) {
+      try {
+        fileTree = await githubService.getFileTree(owner, repoShortName, defaultBranch);
+      } catch (e) {}
+    }
+
+    if (repo) {
       try {
         const histories = await ReviewHistory.find({ repoId: repo._id }).sort({ timestamp: -1 }).limit(5);
         pastScores = histories.map((h) => ({
@@ -202,9 +220,9 @@ class ChatService {
     let activeDiff = analysis?.diff || '';
 
     // If diff is empty but we have repo and commit, try fetching the commit diff via GitHub API
-    if (!activeDiff && repo && activeCommit && activeCommit !== 'unknown' && activeCommit !== 'HEAD') {
+    if (!activeDiff && owner && repoShortName && activeCommit && activeCommit !== 'unknown' && activeCommit !== 'HEAD') {
       try {
-        activeDiff = await githubService.getCommitDiff(repo.owner, repo.name, activeCommit);
+        activeDiff = await githubService.getCommitDiff(owner, repoShortName, activeCommit);
       } catch (e) {}
     }
 
@@ -214,9 +232,73 @@ class ChatService {
     );
     const healthScore = hasAnalysisCompleted ? (analysis.score ?? repo?.lastScore ?? null) : null;
 
+    // Pre-fetch critical files (README, build manifest, and query-relevant files)
+    const fetchedFiles = [];
+    if (owner && repoShortName && Array.isArray(fileTree) && fileTree.length > 0) {
+      const filesToFetch = new Set();
+
+      // 1. User-tagged files
+      for (const tf of taggedFiles) {
+        if (fileTree.includes(tf)) {
+          filesToFetch.add(tf);
+        }
+      }
+
+      // 2. README
+      const readmeFile = fileTree.find((p) => /readme(\.md|\.markdown|\.txt)?$/i.test(p));
+      if (readmeFile) {
+        filesToFetch.add(readmeFile);
+      }
+
+      // 3. Manifest / build file
+      const manifestFile = fileTree.find((p) =>
+        /(^|\/)(pom\.xml|package\.json|go\.mod|cargo\.toml|requirements\.txt|build\.gradle|gemfile)$/i.test(p)
+      );
+      if (manifestFile) {
+        filesToFetch.add(manifestFile);
+      }
+
+      // 4. Query-relevant files
+      if (query) {
+        const stopWords = new Set(['what', 'this', 'does', 'project', 'about', 'explain', 'show', 'tell', 'with', 'from', 'have', 'help', 'code']);
+        const qTerms = query
+          .toLowerCase()
+          .split(/[^a-z0-9_-]+/)
+          .filter((w) => w.length > 3 && !stopWords.has(w));
+
+        for (const term of qTerms) {
+          if (filesToFetch.size >= 5) break;
+          const match = fileTree.find((p) => !filesToFetch.has(p) && p.toLowerCase().includes(term));
+          if (match) {
+            filesToFetch.add(match);
+          }
+        }
+      }
+
+      const fetchPromises = Array.from(filesToFetch).slice(0, 5).map(async (filePath) => {
+        try {
+          const content = await githubService.getFileContent(owner, repoShortName, filePath, defaultBranch);
+          if (content) {
+            return {
+              path: filePath,
+              content: content.length > 4000 ? content.substring(0, 4000) + '\n... [truncated]' : content,
+            };
+          }
+        } catch (e) {
+          console.warn(`[ChatService] Failed to prefetch ${filePath}: ${e.message}`);
+        }
+        return null;
+      });
+
+      const results = await Promise.all(fetchPromises);
+      results.filter(Boolean).forEach((f) => fetchedFiles.push(f));
+    }
+
     return {
-      repoName: repo ? `${repo.owner}/${repo.name}` : (analysis ? analysis.repoName : 'unknown/repo'),
-      defaultBranch: repo?.defaultBranch || 'main',
+      owner,
+      repoShortName,
+      repoName: (owner && repoShortName) ? `${owner}/${repoShortName}` : (repo ? `${repo.owner}/${repo.name}` : (analysis ? analysis.repoName : 'unknown/repo')),
+      defaultBranch,
       stars: repo?.stars || 0,
       forks: repo?.forks || 0,
       openIssues: repo?.openIssues || 0,
@@ -227,7 +309,8 @@ class ChatService {
       sandboxOutput: analysis?.sandboxOutput?.stdout || analysis?.sandboxOutput?.stderr || '',
       healthScore,
       hasAnalysisCompleted,
-      fileTree: (fileTree || []).slice(0, 40),
+      fileTree: fileTree || [],
+      fetchedFiles,
       taggedFiles,
       pastScores,
     };
@@ -256,10 +339,10 @@ class ChatService {
   }) {
     console.log(`[ChatService] [START] Request for session: "${sessionId}" | Query: "${query}" | RepoId: "${repoId}" | AnalysisId: "${analysisId}"`);
     const t0 = Date.now();
-    const context = await this.assembleContext({ repoId, analysisId, taggedFiles });
+    const context = await this.assembleContext({ repoId, analysisId, taggedFiles, query });
     const t1 = Date.now();
     const contextBuildMs = t1 - t0;
-    console.log(`[ChatService] [CONTEXT] Assembled in ${contextBuildMs}ms | Repo: "${context.repoName}" | Branch: "${context.defaultBranch}" | Files: ${context.fileTree.length} | Diff length: ${context.activeDiff.length}`);
+    console.log(`[ChatService] [CONTEXT] Assembled in ${contextBuildMs}ms | Repo: "${context.repoName}" | Branch: "${context.defaultBranch}" | Files: ${context.fileTree.length} | Prefetched: ${context.fetchedFiles.length} | Diff length: ${context.activeDiff.length}`);
 
     const history = await this.getHistory(sessionId);
     const historyText = history
@@ -276,36 +359,44 @@ class ChatService {
     let completionTokens = 0;
     let totalTokens = 0;
 
-    if (this.apiKey) {
+    const apiKey = this.getApiKey();
+
+    if (apiKey) {
       const modeInstruction = mode === 'quick'
         ? `Provide a direct, high-density response formatted strictly in 2-3 concise bullet points with bold sub-labels (e.g. "**Primary finding:** ...", "**Resolution:** ..."). No conversational pleasantries or filler.`
         : `Structure your response with clear markdown headings and bold inline sub-labels:
 - Start with an informative bold header or topic title (e.g. "### Overview of ${context.repoName}")
-- Provide discrete, labeled sections using bold bullet points (e.g. "**Structure:** ...", "**Entry point:** ...", "**Key dependencies:** ...", "**Audit Invariants:** ...")
+- Provide discrete, labeled sections using bold bullet points (e.g. "**Core Purpose:** ...", "**Key Tech Stack:** ...", "**Architecture & Entry Points:** ...", "**Key Modules:** ...")
 - Present discrete points rather than a single dense block of prose.`;
 
-      const prompt = `You are CodeAudit's repo-aware precision AI assistant.
-Your goal is to answer the user's specific question conversationally, clearly, and technically.
+      const fetchedFilesBlock = context.fetchedFiles && context.fetchedFiles.length > 0
+        ? `\nPRE-FETCHED REPOSITORY FILE CONTENTS:\n` +
+          context.fetchedFiles.map((f) => `=== FILE: ${f.path} ===\n${f.content}\n=== END FILE ===`).join('\n\n')
+        : '';
 
-MANDATORY GUARDRAILS & INSTRUCTIONS:
-1. Answer the user's question directly in natural, human-written conversational language.
-2. Under no circumstances should you echo the context structure, dump raw metadata fields, or output internal system state (such as commit hashes, scores without context, or diff status strings) verbatim as a response. Always answer the user's question in natural, conversational language.
-3. If the user asks about code health, quality, or audit findings:
+      const prompt = `You are CodeAudit's repo-aware precision AI assistant.
+Your goal is to answer the user's specific question conversationally, clearly, and technically, grounded in the actual codebase.
+
+MANDATORY INSTRUCTIONS:
+1. Answer the user's question directly, drawing on the real codebase, file contents, dependencies, architecture, and findings provided.
+2. If you need to inspect an additional file from the repository file tree that is not yet shown, use the fetchFileContent tool to inspect it before giving your final answer.
+3. If the user asks what the project does, explain its purpose, key tech stack, core components, and functionality based on the README and source files.
+4. If the user asks about code health, quality, or audit findings:
    - If analysis hasn't completed, honestly state: "Analysis hasn't completed for this commit yet."
    - Never fabricate an audit score or invent findings.
-4. If you do not have enough information to answer the question, state plainly: "I don't have enough information to answer that yet" rather than guessing or dumping internal context fields.
-5. Base all technical details strictly on the repository facts, code, and findings provided below.
+5. Under no circumstances should you echo raw system metadata fields or dump raw JSON structures unless requested. Format your answer with clean GitHub markdown.
 
 ${modeInstruction}
 
 REPOSITORY CONTEXT:
 - Repository: ${context.repoName} (Branch: ${context.defaultBranch})
 - Description: ${context.description}
-${context.activeDiff ? `- Evaluated Diff:\n${context.activeDiff.substring(0, 4000)}` : '- Evaluated Diff: None loaded for this query.'}
+${context.activeDiff ? `- Evaluated Diff:\n${context.activeDiff.substring(0, 4000)}` : ''}
 ${context.findings.length > 0 ? `- Findings:\n${JSON.stringify(context.findings.slice(0, 5), null, 2)}` : (context.hasAnalysisCompleted ? '- Findings: No active findings detected.' : '- Findings: Analysis has not completed yet.')}
 ${context.sandboxOutput ? `- Sandbox Execution Output:\n${context.sandboxOutput.substring(0, 1500)}` : ''}
-${context.fileTree.length > 0 ? `- Verified Repository File Paths:\n${context.fileTree.join('\n')}` : ''}
+${context.fileTree.length > 0 ? `- Verified Repository File Tree (Total ${context.fileTree.length} files):\n${context.fileTree.slice(0, 80).join('\n')}` : ''}
 ${taggedFiles.length > 0 ? `- User Scoped Files: ${taggedFiles.join(', ')}` : ''}
+${fetchedFilesBlock}
 
 ${historyText ? `RECENT CHAT HISTORY:\n${historyText}\n` : ''}
 USER QUESTION:
@@ -313,65 +404,129 @@ ${query}
 
 Respond conversationally to the user's question:`;
 
+      const tools = [
+        {
+          functionDeclarations: [
+            {
+              name: 'fetchFileContent',
+              description: 'Fetch the raw contents of a file in the repository to inspect its code, configuration, or implementation details.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  filePath: {
+                    type: 'STRING',
+                    description: 'The exact relative path of the file as shown in the Verified Repository File Tree (e.g., README.md, pom.xml, src/index.js)',
+                  },
+                },
+                required: ['filePath'],
+              },
+            },
+          ],
+        },
+      ];
+
       // Try models in order with hard 30s timeout per call
       for (const modelName of this.models) {
         const tModel = Date.now();
         try {
           console.log(`[ChatService] [LLM CALL] Attempting model "${modelName}" with 30s hard timeout...`);
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
-          const res = await axios.post(
-            endpoint,
-            {
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: mode === 'quick' ? 0.1 : 0.2,
-              },
-            },
-            { timeout: 30000 }
-          );
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-          const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (text) {
-            fullReply = text.trim();
-            const usage = res.data.usageMetadata || {};
-            promptTokens = usage.promptTokenCount || Math.ceil(prompt.length / 4);
-            completionTokens = usage.candidatesTokenCount || Math.ceil(fullReply.length / 4);
-            totalTokens = usage.totalTokenCount || (promptTokens + completionTokens);
-            console.log(`[ChatService] [LLM SUCCESS] Model "${modelName}" responded in ${Date.now() - tModel}ms | Tokens: ${totalTokens}`);
-            break; // Succeeded
+          let conversationContents = [
+            { role: 'user', parts: [{ text: prompt }] },
+          ];
+
+          const generationConfig = {
+            temperature: mode === 'quick' ? 0.1 : 0.2,
+          };
+          if (!modelName.includes('lite')) {
+            generationConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
+
+          // Allow up to 2 tool execution turns if model requests files
+          for (let turn = 0; turn < 3; turn++) {
+            const res = await axios.post(
+              endpoint,
+              {
+                contents: conversationContents,
+                tools,
+                generationConfig,
+              },
+              { timeout: 30000 }
+            );
+
+            const candidate = res.data.candidates?.[0];
+            const candidateContent = candidate?.content;
+            if (!candidateContent) break;
+
+            const parts = candidateContent.parts || [];
+            const functionCallPart = parts.find((p) => p.functionCall);
+
+            if (functionCallPart && turn < 2 && context.owner && context.repoShortName) {
+              const { name, args } = functionCallPart.functionCall;
+              if (name === 'fetchFileContent' && args?.filePath) {
+                const targetPath = args.filePath;
+                console.log(`[ChatService] [TOOL CALL] Model requested file: ${targetPath}`);
+                const fileCode = await githubService.getFileContent(
+                  context.owner,
+                  context.repoShortName,
+                  targetPath,
+                  context.defaultBranch
+                );
+
+                // Add model's turn (with functionCall) and function response
+                conversationContents.push(candidateContent);
+                conversationContents.push({
+                  role: 'function',
+                  parts: [
+                    {
+                      functionResponse: {
+                        name: 'fetchFileContent',
+                        response: {
+                          filePath: targetPath,
+                          content: fileCode ? fileCode.substring(0, 8000) : 'File not found or empty.',
+                        },
+                      },
+                    },
+                  ],
+                });
+                continue; // Next turn with function response
+              }
+            }
+
+            // Extract text response
+            const textParts = parts.map((p) => p.text).filter(Boolean);
+            const text = textParts.join('\n').trim();
+            if (text) {
+              fullReply = text;
+              const usage = res.data.usageMetadata || {};
+              promptTokens = usage.promptTokenCount || Math.ceil(prompt.length / 4);
+              completionTokens = usage.candidatesTokenCount || Math.ceil(fullReply.length / 4);
+              totalTokens = usage.totalTokenCount || (promptTokens + completionTokens);
+              console.log(`[ChatService] [LLM SUCCESS] Model "${modelName}" responded in ${Date.now() - tModel}ms | Tokens: ${totalTokens}`);
+              break;
+            }
+          }
+
+          if (fullReply) {
+            break; // Succeeded with this model
           }
         } catch (err) {
           console.warn(`[ChatService] [LLM ERROR] Model "${modelName}" failed in ${Date.now() - tModel}ms: ${err.message}.`);
         }
       }
     } else {
-      console.log(`[ChatService] [NOTICE] No GEMINI_API_KEY set; using grounded deterministic review.`);
+      console.warn(`[ChatService] [NOTICE] No GEMINI_API_KEY set.`);
     }
 
     const t2 = Date.now();
     const generationMs = t2 - t1;
     const totalMs = t2 - t0;
 
+    // Never use canned or hardcoded template answers!
     if (!fullReply) {
-      // Deterministic conversational fallback answering the question naturally without dumping raw metadata
-      const lowerQuery = (query || '').toLowerCase();
-      
-      if (lowerQuery.includes('audit') || lowerQuery.includes('finding') || lowerQuery.includes('vulnerability') || lowerQuery.includes('issue')) {
-        if (context.hasAnalysisCompleted) {
-          fullReply = `The audit evaluation for **${context.repoName}** identified ${context.findings.length} findings.${context.findings.length > 0 ? ` Key findings include ${context.findings.map(f => f.title || f.rule).slice(0, 2).join(' and ')}.` : ' No vulnerabilities or blocking issues were identified in this run.'}`;
-        } else {
-          fullReply = `Analysis hasn't completed for this commit yet. Once an audit is triggered and completes, verified diagnostic findings will be available.`;
-        }
-      } else if (lowerQuery.includes('what') || lowerQuery.includes('overview') || lowerQuery.includes('do') || lowerQuery.includes('about')) {
-        fullReply = `**${context.repoName}** is ${context.description || 'a project registered in CodeAudit'}.${context.fileTree.length > 0 ? ` Key files and modules include \`${context.fileTree.slice(0, 4).join('`, `')}\`.` : ''}`;
-      } else if (lowerQuery.includes('structure') || lowerQuery.includes('tree') || lowerQuery.includes('architecture')) {
-        fullReply = `Here is the high-level module layout for **${context.repoName}** across the ${context.defaultBranch} branch:\n\n` +
-          (context.fileTree.length > 0 ? context.fileTree.slice(0, 6).map(f => `• \`${f}\``).join('\n') : 'No file paths currently indexed.');
-      } else {
-        fullReply = `I don't have enough information to answer that yet. Please try asking about the repository structure or specific files.`;
-      }
-      
-      promptTokens = Math.ceil(query.length / 4) + 60;
+      fullReply = `Unable to generate a response from the AI model at this moment. Please verify your Gemini API key and network connection, then try again.`;
+      promptTokens = Math.ceil(query.length / 4);
       completionTokens = Math.ceil(fullReply.length / 4);
       totalTokens = promptTokens + completionTokens;
     }

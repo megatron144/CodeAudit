@@ -56,7 +56,7 @@ class LLMService {
   }
 
   async callGeminiAPI(diff, sandboxResult, repoContext) {
-    const models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
     const prompt = `You are CodeAudit's precision static analysis and code review engine.
 Analyze the following code diff and sandbox output:
 
@@ -96,7 +96,10 @@ Respond ONLY with valid JSON matching this exact schema:
           endpoint,
           {
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json' }
+            generationConfig: {
+              responseMimeType: 'application/json',
+              ...(!model.includes('lite') ? { thinkingConfig: { thinkingBudget: 0 } } : {})
+            }
           },
           { timeout: 25000 }
         );

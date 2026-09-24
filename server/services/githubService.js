@@ -93,14 +93,21 @@ class GitHubService {
       const cachedData = await redis.get(cacheKey);
       const cachedEtag = await redis.get(etagKey);
 
-      const headers = this.getHeaders(userToken, cachedEtag);
-      const response = await axios.get(url, {
+      // Only send If-None-Match ETag if we actually have the cached data available to serve on 304
+      const headers = this.getHeaders(userToken, cachedData ? cachedEtag : null);
+      let response = await axios.get(url, {
         headers,
         validateStatus: (status) => (status >= 200 && status < 300) || status === 304
       });
 
-      if (response.status === 304 && cachedData) {
-        return JSON.parse(cachedData);
+      if (response.status === 304) {
+        if (cachedData) {
+          return JSON.parse(cachedData);
+        }
+        // Fallback: If 304 but cachedData is missing, re-fetch without ETag
+        response = await axios.get(url, {
+          headers: this.getHeaders(userToken, null)
+        });
       }
 
       if (response.status === 200) {
@@ -109,7 +116,7 @@ class GitHubService {
         try {
           await redis.set(cacheKey, JSON.stringify(data), 'EX', ttl);
           if (newEtag) {
-            await redis.set(etagKey, newEtag, 'EX', ttl * 2);
+            await redis.set(etagKey, newEtag, 'EX', ttl);
           }
         } catch (e) {}
         return data;
@@ -369,6 +376,48 @@ class GitHubService {
     } catch (err) {
       console.warn(`[GitHubService] getFileTree failed for ${owner}/${repo}: ${err.message}`);
       return [];
+    }
+  }
+
+  async getFileContent(owner, repo, path, branch = 'main', userToken = null) {
+    if (!owner || !repo || !path) return null;
+    const cleanPath = path.replace(/^\//, '');
+    const cacheKey = `gh:content:${owner}:${repo}:${cleanPath}:${branch}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return cached;
+    } catch (e) {}
+
+    try {
+      const url = `${this.apiBase}/repos/${owner}/${repo}/contents/${cleanPath}?ref=${encodeURIComponent(branch)}`;
+      const headers = this.getHeaders(userToken);
+
+      const response = await axios.get(url, { headers, timeout: 8000 });
+      let fileText = null;
+
+      if (response.data && response.data.content && response.data.encoding === 'base64') {
+        fileText = Buffer.from(response.data.content, 'base64').toString('utf8');
+      } else if (typeof response.data === 'string') {
+        fileText = response.data;
+      } else if (response.data && response.data.download_url) {
+        const rawRes = await axios.get(response.data.download_url, { timeout: 8000 });
+        fileText = typeof rawRes.data === 'string' ? rawRes.data : JSON.stringify(rawRes.data);
+      }
+
+      if (fileText !== null) {
+        try {
+          await redis.set(cacheKey, fileText, 'EX', 600);
+        } catch (e) {}
+        return fileText;
+      }
+      return null;
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn(`[GitHubService] File not found: ${owner}/${repo}/${cleanPath}`);
+        return null;
+      }
+      console.warn(`[GitHubService] getFileContent failed for ${owner}/${repo}/${cleanPath}: ${err.message}`);
+      return null;
     }
   }
 }
