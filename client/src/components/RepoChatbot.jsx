@@ -14,37 +14,34 @@ const RichBotContent = ({ content }) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={idx} className="h-1" />;
 
+        // Helper to clean heading: remove outer asterisks and trailing repo names
+        const cleanHeading = (title) => {
+          let t = title.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+          t = t.replace(/\s+(?:of|for|in)\s+([a-zA-Z0-9_\-\.]+\/[a-zA-Z0-9_\-\.]+|[a-zA-Z0-9_\-\.]+)(\s|$)/i, '').trim();
+          return t;
+        };
+
         // Markdown headings
         if (trimmed.startsWith('### ')) {
-          let headingText = trimmed.replace('### ', '').trim();
-          headingText = headingText.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
-          if (/^Overview(\s+(of|for)\s+.*)?$/i.test(headingText)) {
-            headingText = 'Overview';
-          }
           return (
             <h4 key={idx} className="font-headline-sm text-xs font-semibold text-primary pt-1">
-              {headingText}
+              {cleanHeading(trimmed.replace('### ', ''))}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
-          let headingText = trimmed.replace('## ', '').trim();
-          headingText = headingText.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
-          if (/^Overview(\s+(of|for)\s+.*)?$/i.test(headingText)) {
-            headingText = 'Overview';
-          }
           return (
             <h3 key={idx} className="font-headline-sm text-sm font-semibold text-on-surface pt-1 border-b border-outline-variant/20 pb-1">
-              {headingText}
+              {cleanHeading(trimmed.replace('## ', ''))}
             </h3>
           );
         }
 
-        // Standalone bold overview header e.g. **Overview of utkarsh2338/GymRatHub**
-        if (/^\*\*Overview(\s+(of|for)\s+[^\*]+)?\*\*$/i.test(trimmed)) {
+        // Standalone bold title line e.g. **Possible Fixes** or **Overview**
+        if (idx === 0 && /^\*\*[A-Za-z0-9\s\-_&/:]+\*\*$/.test(trimmed)) {
           return (
             <h4 key={idx} className="font-headline-sm text-xs font-semibold text-primary pt-1">
-              Overview
+              {cleanHeading(trimmed.slice(2, -2))}
             </h4>
           );
         }

@@ -364,10 +364,11 @@ class ChatService {
     if (apiKey) {
       const modeInstruction = mode === 'quick'
         ? `Provide a direct, high-density response formatted strictly in 2-3 concise bullet points with bold sub-labels (e.g. "**Primary finding:** ...", "**Resolution:** ..."). No conversational pleasantries or filler.`
-        : `Structure your response with clear markdown headings and bold inline sub-labels:
-- When starting an overview, use simply the clean section header: "### Overview" (do NOT include the repository name and do NOT wrap the header in asterisks)
-- Provide discrete, labeled sections using bold bullet points (e.g. "**Core Purpose:** ...", "**Key Tech Stack:** ...", "**Architecture & Entry Points:** ...", "**Key Modules:** ...")
-- Present discrete points rather than a single dense block of prose.`;
+        : `Structure your response with clean, contextual markdown headings (###) and bold inline sub-labels:
+- Choose a natural, specific heading that accurately matches the user's question (e.g., "### Possible Fixes" if the user asks for fixes or suggestions, "### Authentication Flow" if asking about auth, "### Project Architecture" if asking about structure/flow, and "### Overview" ONLY if the user specifically asks for a general project overview or what the project does). Never output "### Overview" for specific questions like fixes, bugs, or features.
+- Never include the repository name in headings (the repository is already visible in the UI header).
+- Never wrap markdown headings in asterisks (write "### Heading", never "### **Heading**" or "**Heading**").
+- Provide discrete, labeled sections using bold bullet points or code snippets.`;
 
       const fetchedFilesBlock = context.fetchedFiles && context.fetchedFiles.length > 0
         ? `\nPRE-FETCHED REPOSITORY FILE CONTENTS:\n` +
@@ -385,7 +386,11 @@ MANDATORY INSTRUCTIONS:
    - If analysis hasn't completed, honestly state: "Analysis hasn't completed for this commit yet."
    - Never fabricate an audit score or invent findings.
 5. Under no circumstances should you echo raw system metadata fields or dump raw JSON structures unless requested. Format your answer with clean GitHub markdown.
-6. When writing section headings, do not include the repository name (since it is already displayed in the UI header) and never wrap markdown headings in asterisks. Specifically, use "### Overview" instead of "**Overview of ...**" or "### Overview of ...".
+6. For section headings:
+   - Provide a dynamic, context-relevant heading matching the user's specific question (e.g. "### Possible Fixes" when asked for fixes or improvements, "### Authentication Architecture" when asked for auth, "### Recommended Refactoring" when asked for improvements, and "### Overview" ONLY when explicitly asked what the project is or does).
+   - Never use "### Overview" for targeted questions like fixes, bugs, or specific features.
+   - Never include the repository name in headings.
+   - Never wrap headings in asterisks (e.g., use "### Possible Fixes", not "### **Possible Fixes**" or "**Possible Fixes**").
 
 ${modeInstruction}
 
@@ -531,10 +536,27 @@ Respond conversationally to the user's question:`;
       completionTokens = Math.ceil(fullReply.length / 4);
       totalTokens = promptTokens + completionTokens;
     } else {
-      // Normalize overview headings: remove asterisks and repository name to keep just "### Overview"
-      fullReply = fullReply
-        .replace(/^(?:###\s*)?(?:\*\*)?Overview(?:\s+(?:of|for)\s+[^\n*#]+)?(?:\*\*)?/im, '### Overview')
-        .replace(/^###\s*\*\*(.*?)\*\*/gm, '### $1');
+      // Dynamic heading sanitation: strip asterisks and redundant repo names from top headings
+      const lines = fullReply.split('\n');
+      for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        let line = lines[i].trim();
+        if (!line) continue;
+
+        // Convert standalone bold title to ### heading: **Possible Fixes** -> ### Possible Fixes
+        if (/^\*\*[A-Za-z0-9\s\-_&/:]+\*\*$/.test(line)) {
+          line = '### ' + line.slice(2, -2).trim();
+        }
+
+        if (line.startsWith('### ')) {
+          let title = line.replace('### ', '').trim();
+          title = title.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+          // Remove repo suffixes like "of owner/repo", "for owner/repo", "in owner/repo"
+          title = title.replace(/\s+(?:of|for|in)\s+([a-zA-Z0-9_\-\.]+\/[a-zA-Z0-9_\-\.]+|[a-zA-Z0-9_\-\.]+)(\s|$)/i, ' ').trim();
+          lines[i] = '### ' + title;
+          break;
+        }
+      }
+      fullReply = lines.join('\n');
     }
 
     // Record session usage
