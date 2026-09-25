@@ -11,11 +11,102 @@ class ChatService {
     this.apiKey = process.env.GEMINI_API_KEY || '';
     this.SESSION_TTL = 86400; // 24 hours
     // Supported production Gemini models with auto-fallback
-    this.models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
+    this.models = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.6-flash',
+      'gemini-3.7-flash',
+      'gemini-3.8-flash',
+    ];
   }
 
   getApiKey() {
     return process.env.GEMINI_API_KEY || this.apiKey || '';
+  }
+
+  /**
+   * Intelligently selects candidate Gemini models based on question complexity:
+   * - Simple / Retrieval / Folder code queries:
+   *     Routes to fast, low-latency Flash models (gemini-1.5-flash, gemini-2.5-flash).
+   * - Complex / Deep Audit / Architecture queries:
+   *     Routes to high-reasoning Pro models (gemini-1.5-pro).
+   */
+  resolveModelsForQuery(query = '', mode = 'detailed') {
+    if (process.env.GEMINI_MODEL) {
+      return [
+        process.env.GEMINI_MODEL,
+        'gemini-1.5-pro',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+      ];
+    }
+
+    const q = (query || '').toLowerCase().trim();
+
+    // 1. Complex / Deep Reasoning / Security / Audit indicators
+    const complexIndicators = [
+      'vulnerabilit', 'security', 'exploit', 'audit', 'cwe', 'cve', 'injection',
+      'xss', 'threat', 'attack', 'sanitize', 'auth', 'privilege',
+      'architecture', 'refactor', 'design pattern', 'race condition',
+      'memory leak', 'concurrency', 'deadlock', 'optimize', 'scalability',
+      'performance bottleneck', 'deep dive', 'critique', 'code health',
+      'quality review', 'potential bug', 'edge case', 'flaw', 'risk'
+    ];
+
+    // 2. Simple / Code Retrieval / Lookup indicators
+    const simpleIndicators = [
+      'give the code', 'show the code', 'show code', 'get code', 'fetch code',
+      'code of folder', 'code of file', 'contents of', 'content of', 'show me',
+      'print', 'read file', 'display', 'view file', 'list file', 'files in',
+      'folder structure', 'file tree', 'tree', 'where is', 'which file',
+      'what is the entry', 'how to run', 'npm start', 'version', 'readme',
+      'how to install', 'what does line', 'what is this file'
+    ];
+
+    const isComplex = complexIndicators.some((kw) => q.includes(kw));
+    const isSimple = simpleIndicators.some((kw) => q.includes(kw)) || (q.length < 35 && !isComplex);
+
+    if (isSimple && !isComplex) {
+      console.log(`[ChatService] [ROUTING] Query classified as SIMPLE/RETRIEVAL -> Prioritizing Flash models.`);
+      return [
+        'gemini-1.5-flash',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
+      ];
+    }
+
+    if (isComplex) {
+      console.log(`[ChatService] [ROUTING] Query classified as COMPLEX/AUDIT -> Prioritizing Pro reasoning models.`);
+      return [
+        'gemini-1.5-pro',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+      ];
+    }
+
+    // Default balanced selection
+    if (mode === 'quick') {
+      return [
+        'gemini-1.5-flash',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
+      ];
+    }
+
+    return [
+      'gemini-2.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ];
   }
 
   getSessionKey(sessionId) {
@@ -431,8 +522,12 @@ Respond conversationally to the user's question:`;
         },
       ];
 
+      const candidateModels = this.resolveModelsForQuery(query, mode);
+      console.log(`[ChatService] [ROUTING] Candidate models priority: ${candidateModels.join(' -> ')}`);
+
+      let usedModel = '';
       // Try models in order with hard 30s timeout per call
-      for (const modelName of this.models) {
+      for (const modelName of candidateModels) {
         const tModel = Date.now();
         try {
           console.log(`[ChatService] [LLM CALL] Attempting model "${modelName}" with 30s hard timeout...`);
@@ -505,6 +600,7 @@ Respond conversationally to the user's question:`;
             const text = textParts.join('\n').trim();
             if (text) {
               fullReply = text;
+              usedModel = modelName;
               const usage = res.data.usageMetadata || {};
               promptTokens = usage.promptTokenCount || Math.ceil(prompt.length / 4);
               completionTokens = usage.candidatesTokenCount || Math.ceil(fullReply.length / 4);
@@ -518,7 +614,8 @@ Respond conversationally to the user's question:`;
             break; // Succeeded with this model
           }
         } catch (err) {
-          console.warn(`[ChatService] [LLM ERROR] Model "${modelName}" failed in ${Date.now() - tModel}ms: ${err.message}.`);
+          const detail = err.response?.data?.error?.message || err.message;
+          console.warn(`[ChatService] [LLM ERROR] Model "${modelName}" failed in ${Date.now() - tModel}ms: ${detail}.`);
         }
       }
     } else {
@@ -564,6 +661,7 @@ Respond conversationally to the user's question:`;
 
     const telemetry = {
       scope: taggedFiles.length > 0 ? `Scoped to ${taggedFiles.join(', ')}` : 'Repo context only',
+      model: usedModel,
       contextBuildMs,
       generationMs,
       totalMs,

@@ -661,6 +661,12 @@ export const RepoChatbot = ({
                     {msg.telemetry && (
                       <div className="px-1 font-sans text-[11px] text-[#888896] flex items-center gap-1.5 select-none">
                         <span>Repo context</span>
+                        {msg.telemetry.model && (
+                          <>
+                            <span>·</span>
+                            <span className="text-blue-400 font-medium">{msg.telemetry.model}</span>
+                          </>
+                        )}
                         {msg.telemetry.totalMs && (
                           <>
                             <span>·</span>
@@ -928,6 +934,12 @@ export const RepoChatbot = ({
                       {msg.telemetry && (
                         <div className="px-1 font-sans text-[11px] text-[#888896] flex items-center gap-1.5 select-none">
                           <span>Repo context</span>
+                          {msg.telemetry.model && (
+                            <>
+                              <span>·</span>
+                              <span className="text-blue-400 font-medium">{msg.telemetry.model}</span>
+                            </>
+                          )}
                           {msg.telemetry.totalMs && (
                             <>
                               <span>·</span>
