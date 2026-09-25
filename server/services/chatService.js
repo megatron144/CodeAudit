@@ -365,7 +365,7 @@ class ChatService {
       const modeInstruction = mode === 'quick'
         ? `Provide a direct, high-density response formatted strictly in 2-3 concise bullet points with bold sub-labels (e.g. "**Primary finding:** ...", "**Resolution:** ..."). No conversational pleasantries or filler.`
         : `Structure your response with clear markdown headings and bold inline sub-labels:
-- Start with an informative bold header or topic title (e.g. "### Overview of ${context.repoName}")
+- When starting an overview, use simply the clean section header: "### Overview" (do NOT include the repository name and do NOT wrap the header in asterisks)
 - Provide discrete, labeled sections using bold bullet points (e.g. "**Core Purpose:** ...", "**Key Tech Stack:** ...", "**Architecture & Entry Points:** ...", "**Key Modules:** ...")
 - Present discrete points rather than a single dense block of prose.`;
 
@@ -385,6 +385,7 @@ MANDATORY INSTRUCTIONS:
    - If analysis hasn't completed, honestly state: "Analysis hasn't completed for this commit yet."
    - Never fabricate an audit score or invent findings.
 5. Under no circumstances should you echo raw system metadata fields or dump raw JSON structures unless requested. Format your answer with clean GitHub markdown.
+6. When writing section headings, do not include the repository name (since it is already displayed in the UI header) and never wrap markdown headings in asterisks. Specifically, use "### Overview" instead of "**Overview of ...**" or "### Overview of ...".
 
 ${modeInstruction}
 
@@ -529,6 +530,11 @@ Respond conversationally to the user's question:`;
       promptTokens = Math.ceil(query.length / 4);
       completionTokens = Math.ceil(fullReply.length / 4);
       totalTokens = promptTokens + completionTokens;
+    } else {
+      // Normalize overview headings: remove asterisks and repository name to keep just "### Overview"
+      fullReply = fullReply
+        .replace(/^(?:###\s*)?(?:\*\*)?Overview(?:\s+(?:of|for)\s+[^\n*#]+)?(?:\*\*)?/im, '### Overview')
+        .replace(/^###\s*\*\*(.*?)\*\*/gm, '### $1');
     }
 
     // Record session usage

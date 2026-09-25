@@ -16,17 +16,36 @@ const RichBotContent = ({ content }) => {
 
         // Markdown headings
         if (trimmed.startsWith('### ')) {
+          let headingText = trimmed.replace('### ', '').trim();
+          headingText = headingText.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+          if (/^Overview(\s+(of|for)\s+.*)?$/i.test(headingText)) {
+            headingText = 'Overview';
+          }
           return (
             <h4 key={idx} className="font-headline-sm text-xs font-semibold text-primary pt-1">
-              {trimmed.replace('### ', '')}
+              {headingText}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
+          let headingText = trimmed.replace('## ', '').trim();
+          headingText = headingText.replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+          if (/^Overview(\s+(of|for)\s+.*)?$/i.test(headingText)) {
+            headingText = 'Overview';
+          }
           return (
             <h3 key={idx} className="font-headline-sm text-sm font-semibold text-on-surface pt-1 border-b border-outline-variant/20 pb-1">
-              {trimmed.replace('## ', '')}
+              {headingText}
             </h3>
+          );
+        }
+
+        // Standalone bold overview header e.g. **Overview of utkarsh2338/GymRatHub**
+        if (/^\*\*Overview(\s+(of|for)\s+[^\*]+)?\*\*$/i.test(trimmed)) {
+          return (
+            <h4 key={idx} className="font-headline-sm text-xs font-semibold text-primary pt-1">
+              Overview
+            </h4>
           );
         }
 
