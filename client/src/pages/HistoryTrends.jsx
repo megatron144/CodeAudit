@@ -110,10 +110,10 @@ export const HistoryTrends = () => {
             <p className="text-on-surface font-medium text-sm">No audited repositories yet.</p>
             <p className="text-outline text-xs mt-1">Link a repository to track security trends and code health over time.</p>
             <Link
-              to="/repos"
+              to="/"
               className="mt-4 inline-block px-4 py-2 bg-primary text-on-primary font-medium text-xs rounded hover:opacity-90 transition-opacity"
             >
-              Add a Repository
+              Analyze a Repository
             </Link>
           </div>
         ) : (

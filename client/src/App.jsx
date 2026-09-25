@@ -17,7 +17,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/how-it-works/:slug" element={<HowItWorksDetail />} />
-          <Route path="/repos" element={<Repositories />} />
+          <Route path="/repos" element={<Navigate to="/" replace />} />
           <Route path="/repos/:id" element={<RepoDetail />} />
           <Route path="/analysis/:id" element={<AnalysisView />} />
           <Route path="/trends" element={<HistoryTrends />} />

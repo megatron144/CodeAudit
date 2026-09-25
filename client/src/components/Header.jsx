@@ -5,7 +5,7 @@ export const Header = () => {
   const location = useLocation();
 
   const navLinks = [
-    { label: 'Repositories', path: '/repos' },
+    { label: 'New Audit', path: '/' },
     { label: 'Latest Audit', path: '/analysis/latest' },
     { label: 'Trends', path: '/trends' },
     { label: 'Settings', path: '/settings' },
@@ -30,7 +30,9 @@ export const Header = () => {
           {/* Navigation Links */}
           <nav className="hidden sm:flex items-center gap-1 font-body-sm text-xs">
             {navLinks.map((link) => {
-              const isActive = location.pathname.startsWith(link.path);
+              const isActive = link.path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(link.path);
               return (
                 <Link
                   key={link.path}
@@ -46,20 +48,6 @@ export const Header = () => {
               );
             })}
           </nav>
-        </div>
-
-        {/* Right Action / System Status */}
-        <div className="flex items-center gap-3">
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container border border-outline-variant/30 font-code-sm text-[11px] text-outline">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
-            <span>Enterprise Daemon v2.4</span>
-          </span>
-          <Link
-            to="/repos"
-            className="px-3 py-1.5 bg-primary text-on-primary hover:opacity-95 font-body-sm text-xs font-medium rounded transition-opacity"
-          >
-            + Link Repo
-          </Link>
         </div>
       </div>
     </header>
