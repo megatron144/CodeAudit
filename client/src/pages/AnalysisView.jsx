@@ -102,10 +102,11 @@ export const AnalysisView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-container-lowest text-on-surface">
+      <div className="min-h-screen bg-[#0A0A0F] text-[#EDEDF0]">
         <Header />
-        <div className="pt-24 text-center text-outline font-body-sm text-xs">
-          Loading audit workbench...
+        <div className="pt-32 flex flex-col items-center justify-center gap-3 text-center">
+          <span className="w-5 h-5 border-2 border-[#2563eb]/30 border-t-[#2563eb] rounded-full animate-spin"></span>
+          <span className="text-xs font-sans text-[#888896]">Loading audit workbench...</span>
         </div>
       </div>
     );
@@ -114,21 +115,21 @@ export const AnalysisView = () => {
   // Clean empty state when no analysis exists
   if (!analysis || analysis.empty || !analysis._id) {
     return (
-      <div className="min-h-screen bg-surface-container-lowest text-on-surface font-body-md antialiased">
+      <div className="min-h-screen bg-[#0A0A0F] text-[#EDEDF0] font-sans antialiased">
         <Header />
-        <div className="pt-24 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-14 h-14 rounded bg-surface-container flex items-center justify-center border border-outline-variant/30 mb-4 text-outline">
+        <div className="pt-32 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-[#111118] flex items-center justify-center border border-[#1E1E2A] mb-4 text-[#888896]">
             <span className="material-symbols-outlined text-[28px]">analytics</span>
           </div>
-          <h2 className="font-headline-lg text-lg font-semibold text-on-surface mb-2">
+          <h2 className="text-lg font-semibold text-[#EDEDF0] mb-2">
             No analysis performed yet
           </h2>
-          <p className="font-body-sm text-sm text-on-surface-variant max-w-md mb-6">
+          <p className="text-sm text-[#888896] max-w-md mb-6 leading-relaxed">
             Link a public repository and trigger an audit on a commit or pull request to inspect unified diffs, AST evaluation, and security findings.
           </p>
           <Link
             to="/"
-            className="px-4 py-2 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-body-sm text-sm font-medium transition-none flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-sans text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
             <span className="material-symbols-outlined text-[16px]">home</span>
             <span>Return to home</span>
@@ -143,46 +144,46 @@ export const AnalysisView = () => {
   const noticeCount = analysis.findings?.filter((f) => f.severity === 'notice').length || 0;
 
   return (
-    <div className="min-h-screen bg-surface-container-lowest text-on-surface font-body-md antialiased">
+    <div className="min-h-screen bg-[#0A0A0F] text-[#EDEDF0] font-sans antialiased">
       <Header />
 
-      <main className="w-full min-h-screen pt-14 bg-surface-container-lowest flex flex-col">
+      <main className="w-full min-h-screen pt-14 bg-[#0A0A0F] flex flex-col">
           {/* Top Workspace Context Header */}
-          <div className="w-full bg-surface border-b border-outline-variant/30 px-6 py-3">
+          <div className="w-full bg-[#0A0A0F]/90 backdrop-blur-md border-b border-[#1E1E2A] px-6 py-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex flex-col gap-1 min-w-0">
                 {/* Breadcrumb */}
-                <nav aria-label="Breadcrumb" className="flex items-center gap-2 font-body-sm text-body-sm text-outline">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 font-sans text-sm text-[#888896]">
                   {analysis.repoName && (
                     <>
-                      <Link to={`/repos/${analysis.repoId}`} className="hover:text-on-surface text-on-surface-variant transition-colors">
+                      <Link to={`/repos/${analysis.repoId}`} className="hover:text-[#EDEDF0] text-[#888896] transition-colors">
                         {analysis.repoName}
                       </Link>
-                      <span className="text-outline-variant select-none">›</span>
+                      <span className="text-[#5F5F70] select-none">›</span>
                     </>
                   )}
-                  <span className="text-on-surface font-medium truncate">
+                  <span className="text-[#EDEDF0] font-medium truncate">
                     {analysis.prTitle || (analysis.commitHash ? `Commit ${analysis.commitHash.slice(0, 7)}` : 'Analysis')}
                   </span>
                 </nav>
 
                 {/* Commit Metadata */}
-                <div className="flex items-center gap-2 font-body-sm text-xs text-outline">
+                <div className="flex items-center gap-2 font-sans text-xs text-[#888896]">
                   {analysis.commitHash && (
-                    <span className="font-code-sm text-xs text-primary font-medium">
+                    <span className="font-mono text-xs text-blue-400 font-medium">
                       {analysis.commitHash.slice(0, 7)}
                     </span>
                   )}
                   {analysis.author && (
                     <>
-                      <span>·</span>
+                      <span className="text-[#5F5F70]">·</span>
                       <span>{analysis.author}</span>
                     </>
                   )}
                   {analysis.branch && (
                     <>
-                      <span>·</span>
-                      <span className="font-code-sm text-xs text-on-surface-variant">{analysis.branch}</span>
+                      <span className="text-[#5F5F70]">·</span>
+                      <span className="font-mono text-xs text-[#888896]">{analysis.branch}</span>
                     </>
                   )}
                 </div>
@@ -193,11 +194,11 @@ export const AnalysisView = () => {
                 <button
                   onClick={handleRerun}
                   disabled={rerunning}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border border-outline-variant/40 hover:border-outline text-on-surface font-body-sm text-xs rounded transition-none disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111118] border border-[#1E1E2A] hover:border-[#2563eb]/40 text-[#EDEDF0] font-sans text-xs rounded-lg transition-colors disabled:opacity-50"
                   id="reanalyze-btn"
                 >
                   <span
-                    className={`material-symbols-outlined text-[15px] text-on-surface-variant ${
+                    className={`material-symbols-outlined text-[15px] text-[#888896] ${
                       rerunning ? 'animate-spin' : ''
                     }`}
                   >
@@ -221,10 +222,10 @@ export const AnalysisView = () => {
           <div className="w-full max-w-6xl mx-auto p-6 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="font-headline-lg text-lg font-semibold text-on-surface">
+                <h2 className="text-lg font-semibold text-[#EDEDF0]">
                   Analysis results & findings
                 </h2>
-                <p className="font-body-sm text-xs text-outline">
+                <p className="text-xs text-[#888896]">
                   {analysis.findings?.length || 0} findings evaluated across AST static graph and sandbox run
                 </p>
               </div>
@@ -232,7 +233,7 @@ export const AnalysisView = () => {
               {analysis.repoId && (
                 <Link
                   to={`/repos/${analysis.repoId}`}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-primary text-on-primary font-body-sm text-xs font-medium hover:bg-primary/90 transition-colors self-start sm:self-auto"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2563eb] text-white font-sans text-xs font-medium hover:bg-[#1d4ed8] transition-colors self-start sm:self-auto shadow-sm"
                 >
                   <span className="material-symbols-outlined text-[15px]">chat</span>
                   <span>Ask chatbot about this audit</span>

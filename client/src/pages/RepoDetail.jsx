@@ -26,10 +26,11 @@ export const RepoDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-container-lowest text-on-surface">
+      <div className="min-h-screen bg-[#0A0A0F] text-[#EDEDF0]">
         <Header />
-        <div className="pt-24 text-center text-outline font-body-sm text-xs">
-          Loading repository workspace...
+        <div className="pt-32 flex flex-col items-center justify-center gap-3 text-center">
+          <span className="w-5 h-5 border-2 border-[#2563eb]/30 border-t-[#2563eb] rounded-full animate-spin"></span>
+          <span className="text-xs font-sans text-[#888896]">Loading repository workspace...</span>
         </div>
       </div>
     );
@@ -38,25 +39,25 @@ export const RepoDetail = () => {
   const { repo } = data || {};
 
   return (
-    <div className="h-screen bg-surface-container-lowest text-on-surface font-body-md antialiased flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#0A0A0F] text-[#EDEDF0] font-sans antialiased flex flex-col overflow-hidden">
       <Header />
 
       <div className="pt-14 flex-1 flex flex-col min-h-0 w-full">
         {/* Top Context Bar */}
-        <div className="h-14 px-6 bg-surface border-b border-outline-variant/30 flex items-center justify-between gap-4 shrink-0 select-none">
-          <div className="flex items-center gap-1.5 min-w-0 font-body-sm text-sm">
-            <span className="text-on-surface-variant font-normal truncate">
+        <div className="h-14 px-6 bg-[#0A0A0F]/90 backdrop-blur-md border-b border-[#1E1E2A] flex items-center justify-between gap-4 shrink-0 select-none">
+          <div className="flex items-center gap-2 min-w-0 font-sans text-sm">
+            <span className="text-[#888896] font-normal truncate">
               {repo?.owner}
             </span>
-            <span className="text-outline select-none">/</span>
-            <h1 className="font-headline-sm text-sm font-semibold text-on-surface truncate">
+            <span className="text-[#5F5F70] select-none">/</span>
+            <h1 className="font-semibold text-sm text-[#EDEDF0] truncate">
               {repo?.name}
             </h1>
           </div>
         </div>
 
         {/* Primary Interaction Surface: Full-Page Chatbot Workspace */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0A0A0F]">
           <RepoChatbot
             repoId={repo?._id}
             repoName={repo?.fullName || `${repo?.owner}/${repo?.name}`}

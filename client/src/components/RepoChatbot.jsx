@@ -78,13 +78,13 @@ function parseInlineFormattedText(text) {
     const token = match[0];
     if (token.startsWith('**') && token.endsWith('**')) {
       parts.push(
-        <strong key={match.index} className="font-semibold text-on-surface">
+        <strong key={match.index} className="font-semibold text-[#EDEDF0]">
           {token.slice(2, -2)}
         </strong>
       );
     } else if (token.startsWith('`') && token.endsWith('`')) {
       parts.push(
-        <code key={match.index} className="px-1 py-0.5 rounded bg-surface-container border border-outline-variant/30 font-code-sm text-[11px] text-primary">
+        <code key={match.index} className="px-1.5 py-0.5 rounded bg-[#161622] border border-[#1E1E2A] font-mono text-[11px] text-blue-400">
           {token.slice(1, -1)}
         </code>
       );
@@ -565,14 +565,14 @@ export const RepoChatbot = ({
     return (
       <button
         onClick={() => setClosed(false)}
-        className="fixed bottom-5 right-5 h-11 px-4 bg-surface-container border border-outline-variant/50 rounded-full shadow-lg flex items-center gap-2.5 text-on-surface hover:border-primary-container z-50 transition-colors group"
+        className="fixed bottom-5 right-5 h-11 px-4 bg-[#111118] border border-[#1E1E2A] hover:border-[#2563eb]/50 rounded-full shadow-lg flex items-center gap-2.5 text-[#EDEDF0] z-50 transition-all group"
       >
-        <div className="w-6 h-6 rounded-full border border-primary-container/80 flex items-center justify-center bg-primary-container/10">
-          <span className="material-symbols-outlined text-[15px] text-primary">smart_toy</span>
+        <div className="w-6 h-6 rounded-full border border-[#2563eb]/80 flex items-center justify-center bg-[#2563eb]/10">
+          <span className="material-symbols-outlined text-[15px] text-[#2563eb]">smart_toy</span>
         </div>
-        <span className="font-body-sm text-xs font-medium">Repo-aware assistant</span>
+        <span className="font-sans text-xs font-medium">Repo-aware assistant</span>
         {sessionStats.queriesUsed > 0 && (
-          <span className="px-1.5 py-0.5 rounded-full bg-primary-container text-on-primary-container text-[10px] font-code-sm">
+          <span className="px-2 py-0.5 rounded-full bg-[#0B1220] border border-[#2563eb]/50 text-blue-400 text-[11px] font-sans font-semibold">
             {sessionStats.queriesUsed}
           </span>
         )}
@@ -589,35 +589,35 @@ export const RepoChatbot = ({
   // Full-page view layout
   if (isFullPage) {
     return (
-      <div className="w-full flex-1 flex flex-col min-h-0 bg-surface-container-lowest font-body-md text-on-surface select-text overflow-hidden justify-between">
+      <div className="w-full flex-1 flex flex-col min-h-0 bg-[#0A0A0F] font-sans text-[#EDEDF0] select-text overflow-hidden justify-between">
         {/* Message Thread */}
         <div
           ref={threadRef}
-          className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 select-text bg-surface-container-lowest min-h-0"
+          className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 select-text bg-[#0A0A0F] min-h-0"
         >
           {messages.map((msg) => (
             <div key={msg.id || msg.timestamp} className="flex flex-col gap-1.5 max-w-4xl w-full mx-auto">
               {msg.role === 'user' ? (
                 /* User Message: Right-Aligned, Blue Bubble */
                 <div className="flex items-start justify-end gap-2 max-w-[85%] self-end">
-                  <div className="px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-on-primary font-body-sm text-sm leading-relaxed">
+                  <div className="px-4 py-2.5 rounded-2xl rounded-tr-sm bg-[#2563eb] text-white font-sans text-sm leading-relaxed shadow-sm">
                     {msg.content}
                   </div>
                 </div>
               ) : msg.isError ? (
                 /* Inline Error Card with Retry Button */
                 <div className="flex items-start gap-2.5 max-w-[95%] self-start w-full">
-                  <div className="w-6 h-6 rounded-full border border-tertiary/60 bg-surface-container flex items-center justify-center shrink-0 mt-1">
-                    <span className="material-symbols-outlined text-[14px] text-tertiary">error</span>
+                  <div className="w-6 h-6 rounded-full border border-red-500/40 bg-[#161622] flex items-center justify-center shrink-0 mt-1">
+                    <span className="material-symbols-outlined text-[14px] text-red-400">error</span>
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2 min-w-0">
-                    <div className="p-3.5 rounded bg-surface-container border border-outline-variant/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      <span className="text-on-surface font-body-sm">{msg.content}</span>
+                    <div className="p-3.5 rounded-xl bg-[#111118] border border-[#1E1E2A] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <span className="text-[#EDEDF0] font-sans">{msg.content}</span>
                       {msg.retryQuery && (
                         <button
                           onClick={() => handleRetry(msg.retryQuery)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-on-primary font-body-sm text-xs font-medium hover:bg-primary/90 transition-colors shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563eb] text-white font-sans text-xs font-medium hover:bg-[#1d4ed8] transition-colors shrink-0"
                         >
                           <span className="material-symbols-outlined text-[14px]">refresh</span>
                           <span>Retry</span>
@@ -629,16 +629,16 @@ export const RepoChatbot = ({
               ) : (
                 /* Bot Message: Left-Aligned, Clean Flat Card */
                 <div className="flex items-start gap-2.5 max-w-[95%] self-start w-full">
-                  <div className="w-6 h-6 rounded-full border border-primary/50 bg-surface-container flex items-center justify-center shrink-0 mt-1">
-                    <span className="material-symbols-outlined text-[13px] text-primary">smart_toy</span>
+                  <div className="w-6 h-6 rounded-full border border-[#2563eb]/40 bg-[#161622] flex items-center justify-center shrink-0 mt-1">
+                    <span className="material-symbols-outlined text-[13px] text-[#2563eb]">smart_toy</span>
                   </div>
 
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <div className="relative p-4 rounded bg-surface-container border border-outline-variant/30 flex flex-col gap-2">
+                    <div className="relative p-4 rounded-xl bg-[#111118] border border-[#1E1E2A] flex flex-col gap-2">
                       {/* Copy to Clipboard Icon */}
                       <button
                         onClick={() => handleCopyMessage(msg.id, msg.content)}
-                        className="absolute top-3 right-3 w-6 h-6 rounded hover:bg-surface-container-high flex items-center justify-center text-outline hover:text-on-surface transition-colors"
+                        className="absolute top-3 right-3 w-6 h-6 rounded-lg hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0] transition-colors"
                         title="Copy response"
                         aria-label="Copy response to clipboard"
                       >
@@ -659,7 +659,7 @@ export const RepoChatbot = ({
 
                     {/* Technical Generation Metadata Footer */}
                     {msg.telemetry && (
-                      <div className="px-1 font-code-sm text-[10px] text-outline flex items-center gap-1.5 select-none">
+                      <div className="px-1 font-sans text-[11px] text-[#888896] flex items-center gap-1.5 select-none">
                         <span>Repo context</span>
                         {msg.telemetry.totalMs && (
                           <>
@@ -676,21 +676,21 @@ export const RepoChatbot = ({
           ))}
 
           {streaming && (
-            <div className="flex items-center gap-2 text-primary font-code-sm text-xs pl-8 max-w-4xl mx-auto w-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span>Thinking and formulating response...</span>
+            <div className="flex items-center gap-2.5 text-xs font-sans text-[#888896] pl-8 max-w-4xl mx-auto w-full animate-fadeIn py-1">
+              <span className="w-2 h-2 rounded-full bg-[#2563eb] shadow-[0_0_8px_rgba(37,99,235,0.6)] animate-pulse shrink-0"></span>
+              <span className="font-medium text-[#888896]">Thinking and formulating response...</span>
             </div>
           )}
         </div>
 
         {/* Explicit Tree Overlay (if toggled via tree button) */}
         {showTreeModal && (
-          <div className="p-4 bg-surface-container border-t border-outline-variant/30 max-w-4xl mx-auto w-full">
+          <div className="p-4 bg-[#111118] border-t border-[#1E1E2A] max-w-4xl mx-auto w-full">
             <div className="flex items-center justify-between pb-2">
-              <span className="font-headline-sm text-xs font-semibold">Repository structure</span>
+              <span className="font-sans text-xs font-semibold text-[#EDEDF0]">Repository structure</span>
               <button
                 onClick={() => setShowTreeModal(false)}
-                className="w-5 h-5 rounded hover:bg-surface-container-high flex items-center justify-center text-outline hover:text-on-surface"
+                className="w-5 h-5 rounded hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0] transition-colors"
                 aria-label="Close file tree"
               >
                 <span className="material-symbols-outlined text-[15px]">close</span>
@@ -708,15 +708,15 @@ export const RepoChatbot = ({
 
         {/* Mention Tagging Dropdown */}
         {mentionQuery !== null && filteredMentions.length > 0 && (
-          <div className="mx-6 mb-1 p-1 bg-surface-container-high border border-outline-variant/40 rounded shadow-lg flex flex-col gap-0.5 max-w-4xl mx-auto w-full">
-            <span className="px-2 py-1 font-label-sm text-[10px] text-outline font-medium">
+          <div className="mx-6 mb-1 p-1 bg-[#111118] border border-[#1E1E2A] rounded-xl shadow-xl flex flex-col gap-0.5 max-w-4xl mx-auto w-full">
+            <span className="px-2 py-1 font-sans text-[10px] text-[#888896] font-medium">
               Scope question to file:
             </span>
             {filteredMentions.map((file) => (
               <button
                 key={file}
                 onClick={() => insertMention(file)}
-                className="px-2 py-1 text-left font-code-sm text-xs text-on-surface hover:bg-surface-container rounded truncate transition-colors"
+                className="px-2 py-1 text-left font-mono text-xs text-[#EDEDF0] hover:bg-[#161622] rounded-lg truncate transition-colors"
               >
                 @{file}
               </button>
@@ -725,7 +725,7 @@ export const RepoChatbot = ({
         )}
 
         {/* Input Bar */}
-        <div className="p-4 bg-surface border-t border-outline-variant/30 shrink-0 select-none mt-auto">
+        <div className="p-4 bg-[#0A0A0F]/95 backdrop-blur-md border-t border-[#1E1E2A] shrink-0 select-none mt-auto">
           <div className="max-w-4xl mx-auto w-full flex flex-col gap-2.5">
             {/* Suggested Question Chips positioned directly above input */}
             <div className="flex items-center gap-2 overflow-x-auto select-none pb-0.5">
@@ -734,7 +734,7 @@ export const RepoChatbot = ({
                   key={promptText}
                   type="button"
                   onClick={() => handleSend(null, promptText.includes('structure'), promptText)}
-                  className="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface hover:text-primary text-xs font-body-sm transition-colors whitespace-nowrap shrink-0"
+                  className="px-3 py-1 rounded-full bg-[#111118] border border-[#1E1E2A] hover:border-[#2563eb]/40 text-[#888896] hover:text-[#EDEDF0] text-xs font-sans transition-all whitespace-nowrap shrink-0"
                 >
                   {promptText}
                 </button>
@@ -751,7 +751,7 @@ export const RepoChatbot = ({
                   setInput((prev) => `${prev} @${droppedText} `);
                 }
               }}
-              className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 rounded px-3 py-2 focus-within:border-primary transition-colors w-full"
+              className="flex items-center gap-2 bg-[#111118] border border-[#1E1E2A] rounded-xl px-3.5 py-2.5 focus-within:border-[#2563eb]/60 transition-colors w-full shadow-inner"
             >
               {/* Tree Trigger */}
               <button
@@ -762,8 +762,8 @@ export const RepoChatbot = ({
                   }
                   setShowTreeModal(!showTreeModal);
                 }}
-                className={`w-7 h-7 rounded flex items-center justify-center transition-colors shrink-0 ${
-                  showTreeModal ? 'text-primary bg-surface-container' : 'text-outline hover:text-on-surface'
+                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
+                  showTreeModal ? 'text-[#2563eb] bg-[#161622]' : 'text-[#888896] hover:text-[#EDEDF0]'
                 }`}
                 title="Toggle file hierarchy"
                 aria-label="Toggle file hierarchy"
@@ -777,14 +777,14 @@ export const RepoChatbot = ({
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Ask anything about this repo's code or structure (use @ to tag a file)..."
-                className="flex-1 min-w-0 bg-transparent text-sm text-on-surface placeholder:text-outline font-body-sm focus:outline-none"
+                className="flex-1 min-w-0 bg-transparent text-sm text-[#EDEDF0] placeholder:text-[#5F5F70] font-sans focus:outline-none"
               />
 
               {/* Primary Send Action */}
               <button
                 type="submit"
                 disabled={!input.trim() || streaming}
-                className="w-7 h-7 rounded bg-primary hover:bg-primary/90 disabled:opacity-30 text-on-primary flex items-center justify-center transition-colors shrink-0"
+                className="w-7 h-7 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-30 text-white flex items-center justify-center transition-colors shrink-0 shadow-sm"
                 title="Send query"
                 aria-label="Send query"
               >
@@ -804,7 +804,7 @@ export const RepoChatbot = ({
         width: minimized ? '360px' : `${dimensions.width}px`,
         height: minimized ? '48px' : `${dimensions.height}px`,
       }}
-      className="fixed bottom-5 right-5 bg-surface-container border border-outline-variant/40 rounded flex flex-col z-50 shadow-2xl overflow-hidden font-body-md text-on-surface"
+      className="fixed bottom-5 right-5 bg-[#111118] border border-[#1E1E2A] rounded-xl flex flex-col z-50 shadow-2xl overflow-hidden font-sans text-[#EDEDF0]"
       id="codeaudit-chatbot-panel"
     >
       {/* Draggable Resize Handle on Top-Left Corner */}
@@ -812,30 +812,30 @@ export const RepoChatbot = ({
         <div
           onMouseDown={(e) => startResize(e, 'both')}
           title="Drag to resize panel"
-          className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize z-50 hover:bg-primary/20 flex items-center justify-center select-none"
+          className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize z-50 hover:bg-[#2563eb]/20 flex items-center justify-center select-none"
         >
-          <div className="w-1.5 h-1.5 border-t-2 border-l-2 border-outline-variant"></div>
+          <div className="w-1.5 h-1.5 border-t-2 border-l-2 border-[#1E1E2A]"></div>
         </div>
       )}
 
       {/* Header Bar: Minimalist with essential repo context and controls only */}
-      <div className="h-11 px-3 bg-surface-container-high border-b border-outline-variant/30 flex items-center justify-between shrink-0 select-none">
+      <div className="h-11 px-3 bg-[#0A0A0F] border-b border-[#1E1E2A] flex items-center justify-between shrink-0 select-none">
         {/* Left: Context / Identity */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-5 h-5 rounded-full border border-primary/50 bg-surface-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[13px] text-primary">smart_toy</span>
+          <div className="w-5 h-5 rounded-full border border-[#2563eb]/40 bg-[#161622] flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[13px] text-[#2563eb]">smart_toy</span>
           </div>
-          <span className="font-headline-sm text-xs font-semibold text-on-surface truncate">
+          <span className="font-sans text-xs font-semibold text-[#EDEDF0] truncate">
             {repoName}
           </span>
-          <span className="text-[11px] text-outline font-body-sm shrink-0">· Assistant</span>
+          <span className="text-[11px] text-[#888896] font-sans shrink-0">· Assistant</span>
         </div>
 
         {/* Right Side: Collapse and Close controls only */}
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setMinimized(!minimized)}
-            className="w-6 h-6 rounded hover:bg-surface-container flex items-center justify-center text-outline hover:text-on-surface transition-colors"
+            className="w-6 h-6 rounded hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0] transition-colors"
             title={minimized ? 'Expand' : 'Collapse'}
             aria-label={minimized ? 'Expand chatbot' : 'Collapse chatbot'}
           >
@@ -845,7 +845,7 @@ export const RepoChatbot = ({
           </button>
           <button
             onClick={() => setClosed(true)}
-            className="w-6 h-6 rounded hover:bg-surface-container flex items-center justify-center text-outline hover:text-on-surface transition-colors"
+            className="w-6 h-6 rounded hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0] transition-colors"
             title="Close"
             aria-label="Close chatbot"
           >
@@ -860,31 +860,31 @@ export const RepoChatbot = ({
           {/* Message Thread */}
           <div
             ref={threadRef}
-            className="flex-1 p-4 overflow-y-auto flex flex-col gap-3.5 select-text bg-surface-container-lowest"
+            className="flex-1 p-4 overflow-y-auto flex flex-col gap-3.5 select-text bg-[#0A0A0F]"
           >
             {messages.map((msg) => (
               <div key={msg.id || msg.timestamp} className="flex flex-col gap-1.5">
                 {msg.role === 'user' ? (
                   /* User Message: Right-Aligned, Blue Bubble */
                   <div className="flex items-start justify-end gap-2 max-w-[85%] self-end">
-                    <div className="px-3.5 py-2 rounded-2xl rounded-tr-sm bg-primary text-on-primary font-body-sm text-xs leading-relaxed">
+                    <div className="px-3.5 py-2 rounded-2xl rounded-tr-sm bg-[#2563eb] text-white font-sans text-xs leading-relaxed shadow-sm">
                       {msg.content}
                     </div>
                   </div>
                 ) : msg.isError ? (
                   /* Inline Error Card with Retry Button */
                   <div className="flex items-start gap-2.5 max-w-[95%] self-start w-full">
-                    <div className="w-5 h-5 rounded-full border border-tertiary/60 bg-surface-container flex items-center justify-center shrink-0 mt-1">
-                      <span className="material-symbols-outlined text-[13px] text-tertiary">error</span>
+                    <div className="w-5 h-5 rounded-full border border-red-500/40 bg-[#161622] flex items-center justify-center shrink-0 mt-1">
+                      <span className="material-symbols-outlined text-[13px] text-red-400">error</span>
                     </div>
 
                     <div className="flex-1 flex flex-col gap-2 min-w-0">
-                      <div className="p-3 rounded bg-surface-container border border-outline-variant/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                        <span className="text-on-surface font-body-sm">{msg.content}</span>
+                      <div className="p-3 rounded-lg bg-[#111118] border border-[#1E1E2A] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                        <span className="text-[#EDEDF0] font-sans">{msg.content}</span>
                         {msg.retryQuery && (
                           <button
                             onClick={() => handleRetry(msg.retryQuery)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary text-on-primary font-body-sm text-xs font-medium hover:bg-primary/90 transition-colors shrink-0"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#2563eb] text-white font-sans text-xs font-medium hover:bg-[#1d4ed8] transition-colors shrink-0"
                           >
                             <span className="material-symbols-outlined text-[13px]">refresh</span>
                             <span>Retry</span>
@@ -896,16 +896,16 @@ export const RepoChatbot = ({
                 ) : (
                   /* Bot Message: Left-Aligned, Clean Flat Card */
                   <div className="flex items-start gap-2.5 max-w-[95%] self-start">
-                    <div className="w-5 h-5 rounded-full border border-primary/50 bg-surface-container flex items-center justify-center shrink-0 mt-1">
-                      <span className="material-symbols-outlined text-[12px] text-primary">smart_toy</span>
+                    <div className="w-5 h-5 rounded-full border border-[#2563eb]/40 bg-[#161622] flex items-center justify-center shrink-0 mt-1">
+                      <span className="material-symbols-outlined text-[12px] text-[#2563eb]">smart_toy</span>
                     </div>
 
                     <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                      <div className="relative p-3.5 rounded bg-surface-container border border-outline-variant/30 flex flex-col gap-2">
+                      <div className="relative p-3.5 rounded-lg bg-[#111118] border border-[#1E1E2A] flex flex-col gap-2">
                         {/* Copy to Clipboard Icon */}
                         <button
                           onClick={() => handleCopyMessage(msg.id, msg.content)}
-                          className="absolute top-2.5 right-2.5 w-6 h-6 rounded hover:bg-surface-container-high flex items-center justify-center text-outline hover:text-on-surface transition-colors"
+                          className="absolute top-2.5 right-2.5 w-6 h-6 rounded hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0] transition-colors"
                           title="Copy response"
                           aria-label="Copy response to clipboard"
                         >
@@ -926,7 +926,7 @@ export const RepoChatbot = ({
 
                       {/* Technical Generation Metadata Footer */}
                       {msg.telemetry && (
-                        <div className="px-1 font-code-sm text-[10px] text-outline flex items-center gap-1.5 select-none">
+                        <div className="px-1 font-sans text-[11px] text-[#888896] flex items-center gap-1.5 select-none">
                           <span>Repo context</span>
                           {msg.telemetry.totalMs && (
                             <>
@@ -943,21 +943,21 @@ export const RepoChatbot = ({
             ))}
 
             {streaming && (
-              <div className="flex items-center gap-2 text-primary font-code-sm text-xs pl-7">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                <span>Generating technical analysis...</span>
+              <div className="flex items-center gap-2.5 text-xs font-sans text-[#888896] pl-7 animate-fadeIn py-1">
+                <span className="w-2 h-2 rounded-full bg-[#2563eb] shadow-[0_0_8px_rgba(37,99,235,0.6)] animate-pulse shrink-0"></span>
+                <span className="font-medium text-[#888896]">Thinking and formulating response...</span>
               </div>
             )}
           </div>
 
           {/* Explicit Tree Overlay (if toggled via tree button) */}
           {showTreeModal && (
-            <div className="p-3 bg-surface-container border-t border-outline-variant/30">
+            <div className="p-3 bg-[#111118] border-t border-[#1E1E2A]">
               <div className="flex items-center justify-between pb-2">
-                <span className="font-headline-sm text-xs font-semibold">Repository structure</span>
+                <span className="font-sans text-xs font-semibold text-[#EDEDF0]">Repository structure</span>
                 <button
                   onClick={() => setShowTreeModal(false)}
-                  className="w-5 h-5 rounded hover:bg-surface-container-high flex items-center justify-center text-outline hover:text-on-surface"
+                  className="w-5 h-5 rounded hover:bg-[#161622] flex items-center justify-center text-[#888896] hover:text-[#EDEDF0]"
                   aria-label="Close file tree"
                 >
                   <span className="material-symbols-outlined text-[15px]">close</span>
@@ -975,15 +975,15 @@ export const RepoChatbot = ({
 
           {/* Mention Tagging Dropdown */}
           {mentionQuery !== null && filteredMentions.length > 0 && (
-            <div className="mx-3 mb-1 p-1 bg-surface-container-high border border-outline-variant/40 rounded shadow-lg flex flex-col gap-0.5">
-              <span className="px-2 py-1 font-label-sm text-[10px] text-outline font-medium">
+            <div className="mx-3 mb-1 p-1 bg-[#111118] border border-[#1E1E2A] rounded-xl shadow-lg flex flex-col gap-0.5">
+              <span className="px-2 py-1 font-sans text-[10px] text-[#888896] font-medium">
                 Scope question to file:
               </span>
               {filteredMentions.map((file) => (
                 <button
                   key={file}
                   onClick={() => insertMention(file)}
-                  className="px-2 py-1 text-left font-code-sm text-xs text-on-surface hover:bg-surface-container rounded truncate transition-colors"
+                  className="px-2 py-1 text-left font-mono text-xs text-[#EDEDF0] hover:bg-[#161622] rounded-lg truncate transition-colors"
                 >
                   @{file}
                 </button>
@@ -992,7 +992,7 @@ export const RepoChatbot = ({
           )}
 
           {/* Input Bar: Clean, focused, consistent spacing */}
-          <div className="p-3 bg-surface-container-high border-t border-outline-variant/30 shrink-0 select-none">
+          <div className="p-3 bg-[#0A0A0F] border-t border-[#1E1E2A] shrink-0 select-none">
             {/* Suggested Question Chips positioned directly above input */}
             <div className="flex items-center gap-1.5 overflow-x-auto select-none pb-2 scrollbar-none">
               {quickPrompts.map((promptText) => (
@@ -1000,7 +1000,7 @@ export const RepoChatbot = ({
                   key={promptText}
                   type="button"
                   onClick={() => handleSend(null, promptText.includes('structure'), promptText)}
-                  className="px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface hover:text-primary text-[11px] font-body-sm transition-colors whitespace-nowrap shrink-0"
+                  className="px-2.5 py-0.5 rounded-full bg-[#161622] border border-[#1E1E2A] hover:border-[#2563eb]/40 text-[#888896] hover:text-[#EDEDF0] text-[11px] font-sans transition-colors whitespace-nowrap shrink-0"
                 >
                   {promptText}
                 </button>
@@ -1017,7 +1017,7 @@ export const RepoChatbot = ({
                   setInput((prev) => `${prev} @${droppedText} `);
                 }
               }}
-              className="flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant/40 rounded px-2.5 py-1.5 focus-within:border-primary transition-colors"
+              className="flex items-center gap-1.5 bg-[#161622] border border-[#1E1E2A] rounded-lg px-2.5 py-1.5 focus-within:border-[#2563eb]/60 transition-colors"
             >
               {/* Unobtrusive Tree Trigger */}
               <button
@@ -1029,7 +1029,7 @@ export const RepoChatbot = ({
                   setShowTreeModal(!showTreeModal);
                 }}
                 className={`w-6 h-6 rounded flex items-center justify-center transition-colors shrink-0 ${
-                  showTreeModal ? 'text-primary bg-surface-container' : 'text-outline hover:text-on-surface'
+                  showTreeModal ? 'text-[#2563eb] bg-[#111118]' : 'text-[#888896] hover:text-[#EDEDF0]'
                 }`}
                 title="Toggle file hierarchy"
                 aria-label="Toggle file hierarchy"
@@ -1043,14 +1043,14 @@ export const RepoChatbot = ({
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Ask about this repo's structure, code, or entrypoint..."
-                className="flex-1 min-w-0 bg-transparent text-xs text-on-surface placeholder:text-outline font-body-sm focus:outline-none"
+                className="flex-1 min-w-0 bg-transparent text-xs text-[#EDEDF0] placeholder:text-[#5F5F70] font-sans focus:outline-none"
               />
 
               {/* Primary Send Action */}
               <button
                 type="submit"
                 disabled={!input.trim() || streaming}
-                className="w-6 h-6 rounded bg-primary hover:bg-primary/90 disabled:opacity-30 text-on-primary flex items-center justify-center transition-colors shrink-0"
+                className="w-6 h-6 rounded bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-30 text-white flex items-center justify-center transition-colors shrink-0"
                 title="Send query"
                 aria-label="Send query"
               >
